@@ -12,11 +12,9 @@
 
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z'/></svg>">
-  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
-  <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
-
-  <!-- PWA Web App Manifest -->
-  <link rel="manifest" href="/manifest.json">
+  
+  <!-- Inline PWA Web App Manifest (Fixes 404 manifest issue) -->
+  <link rel="manifest" href='data:application/manifest+json,{"name":"Twit AI","short_name":"Twit AI","start_url":".","display":"standalone","background_color":"#070a12","theme_color":"#070a12","icons":[{"src":"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%2338bdf8%22%3E%3Cpath%20d%3D%22M20%202H4c-1.1%200-2%20.9-2%202v18l4-4h14c1.1%200%202-.9%202-2V4c0-1.1-.9-2-2-2zM9%2011H7V9h2v2zm4%200h-2V9h2v2zm4%200h-2V9h2v2z%22%2F%3E%3C%2Fsvg%3E","sizes":"any","type":"image/svg+xml"}]}'>
 
   <!-- PWA Service Worker -->
   <script>
@@ -24,7 +22,7 @@
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("/sw.js", { scope: "/" })
           .then(reg => console.log("Twit AI service worker ready:", reg.scope))
-          .catch(err => console.warn("Twit AI service worker unavailable:", err));
+          .catch(err => console.warn("Twit AI service worker unavailable. Please ensure /sw.js exists.", err));
       });
     }
   </script>
@@ -701,22 +699,12 @@
 
     const $ = id => document.getElementById(id);
 
-    // ------------------------------------------------------------
-    // Firebase Auth
-    // ------------------------------------------------------------
-    let authInitialized = false;
-    let redirectInProgress = false;
-
+    // ------------------------------------------------------------ //
+    // Firebase Auth (Fixed Mobile Issue)
+    // ------------------------------------------------------------ //
     function isMobileDevice() {
-      return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    }
-
-    async function ensureAuthPersistence() {
-      try {
-        await setPersistence(auth, browserLocalPersistence);
-      } catch (e) {
-        console.warn("Firebase persistence:", e);
-      }
+      return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     }
 
     async function loginGoogle() {
@@ -733,52 +721,84 @@
       text.textContent = "Connecting...";
 
       try {
-        await ensureAuthPersistence();
+        await setPersistence(auth, browserLocalPersistence);
 
-        // Always use redirect on phones/tablets.
-        // This avoids popup blockers and popup lifecycle issues.
+        // Mobile devices strictly use redirect to avoid popup blocker issues
         if (isMobileDevice()) {
-          redirectInProgress = true;
           await signInWithRedirect(auth, googleProvider);
-          return;
+          return; // Page will reload
         }
 
-        // Desktop uses popup for a faster flow.
-        const result = await signInWithPopup(auth, googleProvider);
-        if (result?.user) {
-          state.user = result.user;
-          updateAuthUI();
-          closeModal("loginModal");
-          showToast("Signed in successfully");
-          await refreshAccount();
+        // Desktop uses popup for a seamless experience
+        try {
+          const result = await signInWithPopup(auth, googleProvider);
+          if (result?.user) {
+            state.user = result.user;
+            updateAuthUI();
+            closeModal("loginModal");
+            showToast("Signed in successfully");
+            await refreshAccount();
+          }
+        } catch (popupErr) {
+          // If popup is blocked on desktop, fallback to redirect
+          if (["auth/popup-blocked", "auth/popup-closed-by-user", "auth/cancelled-popup-request", "auth/operation-not-supported-in-this-environment"].includes(popupErr?.code)) {
+            await signInWithRedirect(auth, googleProvider);
+          } else {
+            throw popupErr;
+          }
         }
       } catch (err) {
         console.error("Google sign-in error:", err);
-
-        // Desktop popup can be blocked. Retry with redirect.
-        if (!isMobileDevice() &&
-            ["auth/popup-blocked", "auth/popup-closed-by-user", "auth/cancelled-popup-request", "auth/internal-error"].includes(err?.code)) {
-          try {
-            redirectInProgress = true;
-            await signInWithRedirect(auth, googleProvider);
-            return;
-          } catch (redirectError) {
-            console.error("Google redirect fallback:", redirectError);
-            errorEl.textContent = redirectError?.message || "Google sign-in failed. Please try again.";
-            errorEl.classList.remove("hidden");
-          }
-        } else if (err?.code !== "auth/popup-closed-by-user") {
-          errorEl.textContent = err?.message || "Google sign-in failed. Please try again.";
-          errorEl.classList.remove("hidden");
-        }
-      } finally {
-        if (!redirectInProgress) {
-          btn.disabled = false;
-          icon.className = "fa-brands fa-google";
-          text.textContent = "Continue with Google";
-        }
+        errorEl.textContent = err?.message || "Google sign-in failed. Please try again.";
+        errorEl.classList.remove("hidden");
+        btn.disabled = false;
+        icon.className = "fa-brands fa-google";
+        text.textContent = "Continue with Google";
       }
     }
+
+    // Handle redirect result when returning from mobile sign-in
+    getRedirectResult(auth).then((result) => {
+      if (result && result.user) {
+        closeModal("loginModal");
+        showToast("Signed in successfully");
+      }
+    }).catch((error) => {
+      console.error("Redirect result error:", error);
+      const errorEl = $("loginError");
+      if (errorEl) {
+        errorEl.textContent = error?.message || "Google sign-in redirect failed.";
+        errorEl.classList.remove("hidden");
+      }
+      const btn = $("googleLoginBtn");
+      if (btn) {
+        btn.disabled = false;
+        $("googleLoginIcon").className = "fa-brands fa-google";
+        $("googleLoginText").textContent = "Continue with Google";
+      }
+    });
+
+    // Single unified Auth State Listener
+    onAuthStateChanged(auth, async user => {
+      state.user = user;
+      updateAuthUI();
+
+      const btn = $("googleLoginBtn");
+      if (btn) {
+        btn.disabled = false;
+        $("googleLoginIcon").className = "fa-brands fa-google";
+        $("googleLoginText").textContent = "Continue with Google";
+      }
+
+      if (user) {
+        closeModal("loginModal");
+        try {
+          await refreshAccount();
+        } catch (e) {
+          console.warn("Account refresh failed:", e);
+        }
+      }
+    });
 
     async function logout() {
       try {
@@ -797,7 +817,6 @@
 
     function updateAuthUI() {
       const loggedIn = !!state.user;
-
       if (loggedIn) {
         $("loginBtn").classList.add("hidden");
         $("userArea").classList.remove("hidden");
@@ -810,81 +829,14 @@
       }
     }
 
-    // Firebase is the source of truth.
-    // Do not rely on getRedirectResult alone.
-    onAuthStateChanged(auth, async user => {
-      state.user = user;
-      authInitialized = true;
-
-      if (user) {
-        updateAuthUI();
-        closeModal("loginModal");
-
-        // Restore account data after Firebase confirms the session.
-        try {
-          await refreshAccount();
-        } catch (e) {
-          console.warn("Account restore:", e);
-        }
-
-        if (redirectInProgress) {
-          redirectInProgress = false;
-          showToast("Signed in successfully");
-        }
-      } else {
-        state.profile = null;
-        updateAuthUI();
-      }
-
-      const btn = $("googleLoginBtn");
-      if (btn && !redirectInProgress) {
-        btn.disabled = false;
-        $("googleLoginIcon").className = "fa-brands fa-google";
-        $("googleLoginText").textContent = "Continue with Google";
-      }
-    });
-
-    // Consume a pending redirect result as an additional safety step.
-    // onAuthStateChanged remains the authoritative state update.
-    (async () => {
-      try {
-        await ensureAuthPersistence();
-        const result = await getRedirectResult(auth);
-
-        if (result?.user) {
-          state.user = result.user;
-          updateAuthUI();
-          closeModal("loginModal");
-        }
-      } catch (e) {
-        console.error("Redirect result error:", e);
-        const errorEl = $("loginError");
-        if (errorEl && e?.code !== "auth/no-auth-event") {
-          errorEl.textContent = e?.message || "Google sign-in could not be completed.";
-          errorEl.classList.remove("hidden");
-        }
-      } finally {
-        redirectInProgress = false;
-      }
-    })();
-
-    // ------------------------------------------------------------
-    // PWA installation
-    // ------------------------------------------------------------
+    // ------------------------------------------------------------ //
+    // PWA Installation (Fixed Manifest Issue)
+    // ------------------------------------------------------------ //
     let deferredPrompt = null;
 
     function isStandalone() {
       return window.matchMedia("(display-mode: standalone)").matches ||
         window.navigator.standalone === true;
-    }
-
-    function isIOS() {
-      return /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    }
-
-    function isMac() {
-      return /Macintosh|Mac OS X/i.test(navigator.userAgent) && !isIOS();
     }
 
     function setInstallAvailable(available) {
@@ -916,27 +868,22 @@
         return;
       }
 
-      // Chrome/Edge Android/PC: use the real native install prompt.
       if (deferredPrompt) {
         try {
           deferredPrompt.prompt();
           const choice = await deferredPrompt.userChoice;
-
           if (choice?.outcome === "accepted") {
             showToast("Installing Twit AI...");
           }
-
           deferredPrompt = null;
           setInstallAvailable(false);
         } catch (e) {
-          console.warn("Install prompt:", e);
+          console.warn("Install prompt error:", e);
           deferredPrompt = null;
         }
         return;
       }
 
-      // iPhone/iPad and browsers without beforeinstallprompt need
-      // the browser's Add to Home Screen flow.
       openModal("installModal");
     }
 
@@ -1343,8 +1290,7 @@
         saveLocalState();
         renderMessages();
         
-        // Fix Slow Generation: Run refreshAccount in the background without awaiting
-        // This allows the UI to render replies instantly!
+        // Run refreshAccount in the background to speed up UI
         refreshAccount();
       } catch (e) {
         chat.messages[chat.messages.length - 1] = {
@@ -1419,7 +1365,6 @@
     $("newChatBtn").addEventListener("click", () => createNewChat());
     $("sendBtn").addEventListener("click", sendMessage);
 
-    // Direct Install triggers
     $("installAppBtn").addEventListener("click", handleInstallClick);
     $("headerInstallBtn").addEventListener("click", handleInstallClick);
     $("directInstallBtn").addEventListener("click", handleInstallClick);
@@ -1499,16 +1444,6 @@
 
     document.addEventListener("keydown", e => {
       if (e.key === "Escape") closeSidebar();
-    });
-
-    // ---- Auth state listener ----
-    onAuthStateChanged(auth, async user => {
-      state.user = user;
-      updateAuthUI();
-      if (user) {
-        closeModal("loginModal");
-        await refreshAccount();
-      }
     });
 
     // ---- Init ----
