@@ -172,7 +172,7 @@ Never mention the style seed or voice hint.`;
       ],
       max_output_tokens: 2000,
       reasoning: {
-        effort: 'minimal'
+        effort: 'medium'
       }
     });
 
