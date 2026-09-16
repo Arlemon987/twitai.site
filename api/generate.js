@@ -15,13 +15,27 @@ const tones = {
   balanced: "Keep it natural, simple, and conversational."
 };
 
+// Models that accept the `reasoning` parameter on /v1/responses.
+// gpt-4o / gpt-4o-mini do NOT support it and will 400 if it's sent.
+// Add/remove entries here as you switch OPENAI_MODEL.
+const REASONING_MODELS = new Set([
+  "gpt-5.4-nano",
+  "gpt-5.4-mini",
+  "gpt-5-nano",
+  "gpt-5-mini",
+  "o1",
+  "o1-mini",
+  "o3",
+  "o3-mini"
+]);
+
 // ---------------------------------------------------------------------------
 // STATIC SYSTEM PROMPT
 // This block never changes between requests, regardless of tone/replyCount/
 // minWords/maxWords/tag/language. Keeping it fixed and hoisted out of the
 // handler means it forms a stable, byte-identical prefix on every call, which
-// is what OpenAI's automatic prompt caching matches against. Padded to sit
-// comfortably above the ~1024-token minimum caching threshold on its own.
+// is what automatic prompt caching matches against. Padded to sit comfortably
+// above the ~1024-token minimum caching threshold on its own.
 // ---------------------------------------------------------------------------
 const STATIC_SYSTEM_PROMPT = `You write natural X (Twitter) replies.
 
@@ -200,10 +214,10 @@ export default async function handler(req, res) {
   try {
     const {
       tweet,
-      minWords = 9,
-      maxWords = 12,
-      replyCount = 3,
-      tone = "friendly casual",
+      minWords = 10,
+      maxWords = 15,
+      replyCount = 5,
+      tone = "casual",
       tag = "",
       language = "auto"
     } = req.body || {};
@@ -282,10 +296,8 @@ export default async function handler(req, res) {
 
     // ---------------------------------------------------------------------
     // Everything that varies per-request is appended AFTER the static block,
-    // never interleaved with it. This keeps the long static prefix
-    // byte-identical across calls (so it can be served from cache) even when
-    // tone/replyCount/minWords/maxWords/tag/language differ between users or
-    // between two calls from the same user.
+    // never interleaved with it, so the long static prefix stays
+    // byte-identical across calls and remains cacheable.
     // ---------------------------------------------------------------------
     const dynamicInstructions = `
 
@@ -318,15 +330,24 @@ Voice hint: ${persona}
 Never mention the style seed.
 Never mention the voice hint.`;
 
-    const response = await openai.responses.create({
-      model: process.env.OPENAI_MODEL,
+    const model = process.env.OPENAI_MODEL;
+
+    const requestPayload = {
+      model,
       input: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage }
       ],
-      max_output_tokens: 400,
-      reasoning: { effort: "low" }
-    });
+      max_output_tokens: 400
+    };
+
+    // Only attach `reasoning` for models that actually support it.
+    // gpt-4o / gpt-4o-mini reject the request with a 400 if it's present.
+    if (REASONING_MODELS.has(model)) {
+      requestPayload.reasoning = { effort: "low" };
+    }
+
+    const response = await openai.responses.create(requestPayload);
 
     const text = response.output_text || "";
 
