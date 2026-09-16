@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CT Reply Forge - Chat UI</title>
+  <meta name="theme-color" content="#0d0d0d">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #212121; color: #ececec; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
+    textarea { line-height: 1.5; }
+  </style>
+</head>
+
+<body class="h-screen flex overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="w-64 bg-[#171717] flex flex-col absolute md:relative inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out z-50 border-r border-neutral-800">
+    <div class="p-3 border-b border-neutral-800">
+      <button id="newChatBtn" class="w-full flex items-center gap-2.5 p-3 rounded-lg border border-neutral-700 hover:bg-neutral-800 transition text-sm font-medium">
+        <i class="fa-solid fa-pen-to-square text-sm"></i> New Chat
+      </button>
+    </div>
+    <div id="chatList" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+      <!-- Chats injected here -->
+    </div>
+    <div class="p-3 border-t border-neutral-800">
+      <button id="configBtn" class="w-full flex items-center gap-2.5 p-3 rounded-lg hover:bg-neutral-800 transition text-sm">
+        <i class="fa-solid fa-sliders text-sm"></i> Settings & Rules
+      </button>
+    </div>
+  </aside>
+
+  <!-- Sidebar Overlay (Mobile) -->
+  <div id="sidebarOverlay" class="absolute inset-0 bg-black/50 hidden md:hidden z-40"></div>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col bg-[#212121] relative">
+    
+    <!-- Top Bar -->
+    <header class="h-12 border-b border-neutral-800 flex items-center justify-between px-3">
+      <button id="toggleSidebar" class="p-2 rounded-lg hover:bg-neutral-800">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+      <h1 class="font-semibold text-sm text-neutral-300">CT Reply Forge</h1>
+      <div class="w-8"></div>
+    </header>
+
+    <!-- Chat Area -->
+    <div id="chatContainer" class="flex-1 overflow-y-auto custom-scrollbar">
+      <div id="messages" class="max-w-3xl mx-auto p-4 md:p-6 space-y-6">
+        <!-- Messages injected here -->
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="bg-[#212121] sticky bottom-0">
+      <div class="max-w-3xl mx-auto p-4">
+        <div class="relative bg-[#2f2f2f] rounded-2xl shadow-lg border border-neutral-700/50">
+          <textarea id="chatInput" rows="1" placeholder="Paste a tweet here to generate replies..." class="w-full bg-transparent p-4 pr-14 text-sm resize-none outline-none custom-scrollbar max-h-40"></textarea>
+          <button id="sendBtn" class="absolute right-3 bottom-3 w-9 h-9 rounded-lg bg-white text-black hover:bg-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition">
+            <i class="fa-solid fa-arrow-up text-sm"></i>
+          </button>
+        </div>
+        <p class="text-center text-[11px] text-neutral-500 mt-2">CT Reply Forge can make mistakes. Check word counts before posting.</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Settings Modal -->
+  <div id="configModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
+    <div class="bg-[#2f2f2f] border border-neutral-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div class="flex items-center justify-between border-b border-neutral-700 pb-3">
+        <div class="flex items-center gap-2"><i class="fa-solid fa-gear text-indigo-400"></i><h3 class="text-base font-bold text-white">Settings & Prompt Rules</h3></div>
+        <button id="closeConfigModal" class="text-neutral-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-xs text-neutral-400 block mb-1">Replies per Tweet</label>
+          <input type="number" id="replyCountInput" min="2" max="8" class="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-sm text-white outline-none">
+        </div>
+        <div>
+          <label class="text-xs text-neutral-400 block mb-1">Language</label>
+          <select id="languageSelect" class="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-sm text-white outline-none">
+            <option value="auto">Auto-detect</option>
+            <option value="english">English Only</option>
+            <option value="vietnamese">Vietnamese</option>
+            <option value="chinese">Chinese</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs text-neutral-400 block mb-1">Word Count Range</label>
+        <div class="flex items-center gap-2">
+          <input type="number" id="minWordsInput" min="5" max="30" class="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-sm text-white text-center outline-none">
+          <span class="text-neutral-500">to</span>
+          <input type="number" id="maxWordsInput" min="10" max="50" class="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-sm text-white text-center outline-none">
+          <span class="text-neutral-500 text-xs">words</span>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs text-neutral-400 block mb-1">Tone / Angle</label>
+        <select id="toneSelector" class="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-sm text-white outline-none">
+          <option value="balanced">Balanced CT (Organic Mix)</option>
+          <option value="technical">Technical / Architecture</option>
+          <option value="defi">DeFi & Capital Mechanics</option>
+          <option value="skeptical">Constructive Skeptic</option>
+          <option value="humor">Light CT Irony / Wit</option>
+          <option value="bullish_rational">Rational Conviction</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="text-xs text-neutral-400 block mb-1">Mention Handle/Ticker (Optional)</label>
+        <input type="text" id="projectTag" placeholder="e.g. arbitrum or $ETH" class="w-full px-3 py-2 bg-neutral-800 border border-neutral-600 rounded-lg text-sm text-white outline-none">
+      </div>
+
+      <div class="bg-neutral-800/50 p-3 rounded-lg border border-neutral-700 text-[11px] text-neutral-400 space-y-1">
+        <p><i class="fa-solid fa-check text-emerald-400 mr-1"></i> Never use em dash "—"</p>
+        <p><i class="fa-solid fa-check text-emerald-400 mr-1"></i> No empty hype ("huge", "bullish")</p>
+        <p><i class="fa-solid fa-check text-emerald-400 mr-1"></i> Strictly enforced word counts</p>
+      </div>
+
+      <button id="saveConfigBtn" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition">Save Settings</button>
+    </div>
+  </div>
+
+  <script>
+    // --- State Management ---
+    const state = {
+      chats: [],
+      currentChatId: null,
+      settings: {
+        replyCount: 5,
+        minWords: 10,
+        maxWords: 15,
+        tone: 'balanced',
+        tag: '',
+        language: 'auto'
+      }
+    };
+
+    // Load from localStorage
+    function loadState() {
+      const saved = localStorage.getItem('ctReplyForgeState');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        state.chats = parsed.chats || [];
+        state.currentChatId = parsed.currentChatId;
+        state.settings = { ...state.settings, ...(parsed.settings || {}) };
+      }
+      if (state.chats.length === 0) {
+        createNewChat(false);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem('ctReplyForgeState', JSON.stringify(state));
+    }
+
+    // --- Chat Management ---
+    function createNewChat(render = true) {
+      const newChat = {
+        id: Date.now().toString(),
+        title: "New Chat",
+        messages: []
+      };
+      state.chats.unshift(newChat);
+      state.currentChatId = newChat.id;
+      saveState();
+      if (render) {
+        renderChatList();
+        renderMessages();
+      }
+    }
+
+    function selectChat(chatId) {
+      state.currentChatId = chatId;
+      saveState();
+      renderChatList();
+      renderMessages();
+      // Close sidebar on mobile
+      document.getElementById('sidebar').classList.add('-translate-x-full');
+      document.getElementById('sidebarOverlay').classList.add('hidden');
+    }
+
+    function deleteChat(chatId, e) {
+      e.stopPropagation();
+      state.chats = state.chats.filter(c => c.id !== chatId);
+      if (state.currentChatId === chatId) {
+        state.currentChatId = state.chats[0]?.id || null;
+        if (!state.currentChatId) createNewChat();
+      }
+      saveState();
+      renderChatList();
+      renderMessages();
+    }
+
+    // --- Rendering ---
+    function renderChatList() {
+      const list = document.getElementById('chatList');
+      list.innerHTML = '';
+      state.chats.forEach(chat => {
+        const isActive = chat.id === state.currentChatId;
+        const div = document.createElement('div');
+        div.className = `group flex items-center justify-between p-2.5 rounded-lg cursor-pointer text-sm transition ${isActive ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:bg-neutral-800/50'}`;
+        div.onclick = () => selectChat(chat.id);
+        
+        div.innerHTML = `
+          <div class="flex items-center gap-2.5 truncate">
+            <i class="fa-regular fa-comment text-xs"></i>
+            <span class="truncate">${chat.title}</span>
+          </div>
+          <button class="text-neutral-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition" onclick="deleteChat('${chat.id}', event)">
+            <i class="fa-solid fa-trash text-xs"></i>
+          </button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function renderMessages() {
+      const container = document.getElementById('messages');
+      container.innerHTML = '';
+      const chat = state.chats.find(c => c.id === state.currentChatId);
+      
+      if (!chat || chat.messages.length === 0) {
+        container.innerHTML = `
+          <div class="h-full flex flex-col items-center justify-center text-center pt-20">
+            <div class="w-14 h-14 rounded-2xl bg-neutral-800 flex items-center justify-center text-2xl mb-4 text-neutral-400">
+              <i class="fa-brands fa-x-twitter"></i>
+            </div>
+            <h2 class="text-xl font-semibold text-neutral-300 mb-2">Generate CT Replies</h2>
+            <p class="text-sm text-neutral-500 max-w-md">Paste a tweet below to forge authentic, high-signal Crypto Twitter replies with strict guidelines.</p>
+          </div>
+        `;
+        return;
+      }
+
+      chat.messages.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = msg.role === 'user' ? 'flex justify-end' : 'flex justify-start';
+        
+        if (msg.role === 'user') {
+          div.innerHTML = `<div class="bg-neutral-700 rounded-2xl rounded-br-sm px-4 py-3 max-w-[80%] text-sm whitespace-pre-wrap">${msg.content}</div>`;
+        } else {
+          div.innerHTML = `<div class="max-w-full w-full space-y-3"></div>`;
+          const replyContainer = div.querySelector('div');
+          
+          if (msg.loading) {
+            replyContainer.innerHTML = `<div class="flex items-center gap-2 text-neutral-400 text-sm"><div class="w-3 h-3 border-2 border-neutral-600 border-t-neutral-300 rounded-full animate-spin"></div> Forging replies...</div>`;
+          } else {
+            msg.content.forEach((replyText, index) => {
+              const card = document.createElement('div');
+              card.className = "bg-[#2f2f2f] border border-neutral-700 rounded-xl p-3 group relative";
+              
+              const wCount = countWords(replyText);
+              const inRange = wCount >= state.settings.minWords && wCount <= state.settings.maxWords;
+              const tweetIntentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(replyText)}`;
+              
+              card.innerHTML = `
+                <div class="flex items-start justify-between gap-2 mb-2">
+                  <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded ${inRange ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}">${wCount} words</span>
+                  <div class="flex items-center gap-1.5">
+                    <a href="${tweetIntentUrl}" target="_blank" class="px-2 py-1 rounded-md bg-neutral-800 hover:bg-[#1d9bf0] text-neutral-300 hover:text-white text-[11px] transition flex items-center gap-1"><i class="fa-brands fa-x-twitter text-[10px]"></i> Post</a>
+                    <button class="copy-btn px-2 py-1 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-medium transition flex items-center gap-1"><i class="fa-regular fa-copy text-[10px]"></i> Copy</button>
+                  </div>
+                </div>
+                <div class="text-sm text-neutral-200 font-mono leading-relaxed">${escapeHtml(replyText)}</div>
+              `;
+              
+              card.querySelector('.copy-btn').addEventListener('click', () => {
+                copyToClipboard(replyText);
+                showToast('Copied to clipboard!');
+              });
+              
+              replyContainer.appendChild(card);
+            });
+          }
+        }
+        container.appendChild(div);
+      });
+      
+      // Scroll to bottom
+      const chatContainer = document.getElementById('chatContainer');
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    // --- Helpers ---
+    function countWords(str) {
+      if (!str) return 0;
+      return str.replace(/[#@*`]/g, '').trim().match(/\S+/g)?.length || 0;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+    }
+
+    function showToast(message) {
+      let toast = document.getElementById('toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast';
+        toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-xl bg-neutral-100 text-black font-medium text-xs shadow-2xl transition-all transform translate-y-20 opacity-0 pointer-events-none z-[70]';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = message;
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      clearTimeout(toast.timeoutId);
+      toast.timeoutId = setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+      }, 2000);
+    }
+
+    function parseReplies(rawText) {
+      const replies = [];
+      const codeBlockRegex = /```(?:[a-zA-Z]*\n)?([\s\S]*?)```/g;
+      let match;
+      while ((match = codeBlockRegex.exec(rawText)) !== null) {
+        const text = match[1].trim();
+        if (text) replies.push(text);
+      }
+      if (replies.length === 0) {
+        return rawText.split('\n').map(l => l.trim()).filter(l => l.length > 5).slice(0, state.settings.replyCount);
+      }
+      return replies;
+    }
+
+    // --- API Interaction ---
+    async function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const chat = state.chats.find(c => c.id === state.currentChatId);
+      if (!chat) return;
+
+      // Add user message
+      chat.messages.push({ role: 'user', content: text });
+      // Add loading assistant message
+      chat.messages.push({ role: 'assistant', content: [], loading: true });
+      
+      // Update chat title if it's the first message
+      if (chat.messages.length === 2) {
+        chat.title = text.substring(0, 30) + (text.length > 30 ? '...' : '');
+      }
+
+      input.value = '';
+      input.style.height = 'auto';
+      saveState();
+      renderChatList();
+      renderMessages();
+
+      try {
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tweet: text,
+            minWords: state.settings.minWords,
+            maxWords: state.settings.maxWords,
+            replyCount: state.settings.replyCount,
+            tone: state.settings.tone,
+            tag: state.settings.tag,
+            language: state.settings.language
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Generation failed');
+
+        // Update assistant message
+        const parsed = parseReplies(data.text);
+        chat.messages[chat.messages.length - 1] = { role: 'assistant', content: parsed, loading: false };
+        saveState();
+        renderMessages();
+      } catch (error) {
+        chat.messages[chat.messages.length - 1] = { role: 'assistant', content: [`Error: ${error.message}`], loading: false };
+        saveState();
+        renderMessages();
+        showToast(error.message);
+      }
+    }
+
+    // --- Event Listeners ---
+    document.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      renderChatList();
+      renderMessages();
+
+      // Load settings into modal
+      document.getElementById('replyCountInput').value = state.settings.replyCount;
+      document.getElementById('minWordsInput').value = state.settings.minWords;
+      document.getElementById('maxWordsInput').value = state.settings.maxWords;
+      document.getElementById('toneSelector').value = state.settings.tone;
+      document.getElementById('projectTag').value = state.settings.tag;
+      document.getElementById('languageSelect').value = state.settings.language;
+
+      // Sidebar toggles
+      document.getElementById('newChatBtn').addEventListener('click', () => createNewChat());
+      document.getElementById('toggleSidebar').addEventListener('click', () => {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.toggle('-translate-x-full');
+        overlay.classList.toggle('hidden');
+      });
+      document.getElementById('sidebarOverlay').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.add('-translate-x-full');
+        document.getElementById('sidebarOverlay').classList.add('hidden');
+      });
+
+      // Chat input
+      const input = document.getElementById('chatInput');
+      const sendBtn = document.getElementById('sendBtn');
+      
+      input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = input.scrollHeight + 'px';
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+      sendBtn.addEventListener('click', sendMessage);
+
+      // Settings Modal
+      const configModal = document.getElementById('configModal');
+      document.getElementById('configBtn').addEventListener('click', () => configModal.classList.remove('hidden'));
+      document.getElementById('closeConfigModal').addEventListener('click', () => configModal.classList.add('hidden'));
+      document.getElementById('saveConfigBtn').addEventListener('click', () => {
+        state.settings.replyCount = parseInt(document.getElementById('replyCountInput').value) || 5;
+        state.settings.minWords = parseInt(document.getElementById('minWordsInput').value) || 10;
+        state.settings.maxWords = parseInt(document.getElementById('maxWordsInput').value) || 15;
+        state.settings.tone = document.getElementById('toneSelector').value;
+        state.settings.tag = document.getElementById('projectTag').value.trim();
+        state.settings.language = document.getElementById('languageSelect').value;
+        saveState();
+        configModal.classList.add('hidden');
+        showToast('Settings saved!');
+      });
+    });
+  </script>
+</body>
+</html>
