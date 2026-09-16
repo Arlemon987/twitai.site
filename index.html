@@ -24,7 +24,8 @@
         const swBlob = new Blob([
           "self.addEventListener('install', e => self.skipWaiting());\n" +
           "self.addEventListener('activate', e => clients.claim());\n" +
-          "self.addEventListener('fetch', e => fetch(e.request));"
+          // Fix Mobile Login: Let navigation requests bypass the Service Worker to prevent Firebase Auth Redirect issues
+          "self.addEventListener('fetch', e => { if (e.request.mode === 'navigate') return; e.respondWith(fetch(e.request)); });"
         ], { type: 'text/javascript' });
         navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
       });
@@ -680,10 +681,13 @@
     setPersistence(auth, browserLocalPersistence).catch(() => {});
 
     // Catch redirect return on mobile
-    getRedirectResult(auth).then(result => {
+    getRedirectResult(auth).then(async result => {
       if (result && result.user) {
         closeModal("loginModal");
         showToast("Signed in successfully");
+        state.user = result.user;
+        updateAuthUI();
+        await refreshAccount();
       }
     }).catch(e => {
       console.error("Redirect result error:", e);
@@ -739,10 +743,14 @@
         const { outcome } = await deferredPrompt.userChoice;
         if (outcome === "accepted") {
           showToast("Installing Twit AI...");
+          closeModal("installModal");
         }
         deferredPrompt = null;
+        $("installAppBtn").classList.remove("ring-2", "ring-sky-400");
+        $("headerInstallBtn").classList.remove("ring-2", "ring-sky-400");
       } else {
-        openModal("installModal");
+        // Fix Install Button: If browser blocks auto-prompt, guide the user instead of doing nothing
+        showToast("Use browser menu (⋮) or Share icon to 'Add to Home screen'");
       }
     }
 
@@ -1214,7 +1222,10 @@
         };
         saveLocalState();
         renderMessages();
-        await refreshAccount();
+        
+        // Fix Slow Generation: Run refreshAccount in the background without awaiting
+        // This allows the UI to render replies instantly!
+        refreshAccount();
       } catch (e) {
         chat.messages[chat.messages.length - 1] = {
           role: "assistant",
