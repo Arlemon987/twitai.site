@@ -224,9 +224,9 @@ Never mention the voice hint.`;
           content: userMessage
         }
       ],
-      max_output_tokens: 2000,
+      max_output_tokens: 400,
       reasoning: {
-        effort: 'medium'
+        effort: 'low'
       }
     });
 
