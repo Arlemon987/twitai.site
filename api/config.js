@@ -1,3 +1,7 @@
+// Public subscription configuration.
+// These values are intentionally public because users need them
+// to make manual crypto payments.
+
 export const PAYMENT_CONFIG = {
   network: "BSC-BNB SMART CHAIN",
 
@@ -29,3 +33,13 @@ export const PAYMENT_CONFIG = {
     }
   }
 };
+
+export default async function handler(req, res) {
+  if (req.method !== "GET") {
+    return res.status(405).json({
+      error: "Method not allowed."
+    });
+  }
+
+  return res.status(200).json(PAYMENT_CONFIG);
+}
