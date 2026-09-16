@@ -811,18 +811,6 @@
       deferredPrompt: null
     };
 
-    // Default fallback payment configuration in case /api/config is not yet deployed or unreachable
-    const DEFAULT_PAYMENT_CONFIG = {
-      network: "USDT (TRC20 / Arbitrum / ERC20)",
-      wallet: "0x39F22d3e9134E983e25b16D087c53782e4e1f748",
-      plans: {
-        monthly: { label: "1 Month Pro", amount: "15 USDT / $15" },
-        quarterly: { label: "3 Months Pro", amount: "35 USDT / $35" },
-        biannual: { label: "6 Months Pro", amount: "65 USDT / $65" },
-        lifetime: { label: "Lifetime VIP", amount: "150 USDT / $150" }
-      }
-    };
-
     const $ = id => document.getElementById(id);
 
     // Minimal service worker registration to enable native Chrome install prompt (PC & Android)
@@ -1089,7 +1077,7 @@
       if (isAndroid) return "android";
       if (isMac) return "mac";
       if (isPC) return "pc";
-      return "android"; // default fallback
+      return "android";
     }
 
     function setInstallTab(tabId) {
@@ -1502,7 +1490,6 @@
       openInstallModal();
     });
     $("directInstallBtn").addEventListener("click", triggerDirectInstall);
-    $("retryConfigBtn")?.addEventListener("click", loadPaymentConfig);
 
     // Install tab switching
     document.querySelectorAll(".installTabBtn").forEach(btn => {
