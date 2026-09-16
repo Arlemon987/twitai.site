@@ -1,9 +1,12 @@
 // api/generate.js
+
 import OpenAI from 'openai';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({
+      error: 'Method not allowed'
+    });
   }
 
   try {
@@ -28,63 +31,72 @@ export default async function handler(req, res) {
     });
 
     // -----------------------------
-    // Tone instructions
+    // Tone
     // -----------------------------
 
     let toneDirective = '';
 
-    if (tone === 'technical') {
-      toneDirective =
-        'When relevant, focus on a concrete technical detail such as architecture, execution, consensus, infrastructure, verification, or implementation. Do not force technical language.';
-    } else if (tone === 'defi') {
-      toneDirective =
-        'When relevant, discuss liquidity, incentives, capital efficiency, composability, risk, market structure, or user behavior. Do not force DeFi terminology.';
-    } else if (tone === 'skeptical') {
-      toneDirective =
-        'Use mild, respectful skepticism when appropriate. Question assumptions or point out tradeoffs without sounding negative for the sake of it.';
-    } else if (tone === 'humor') {
-      toneDirective =
-        'Use subtle CT humor or dry irony when it naturally fits. Do not turn every reply into a joke.';
-    } else if (tone === 'bullish_rational') {
-      toneDirective =
-        'Show measured conviction only when supported by something actually present in the post, such as users, activity, shipping, fees, or adoption. Never use empty hype.';
-    } else {
-      toneDirective =
-        'Keep the tone natural and conversational. React to what is actually interesting in the post.';
+    switch (tone) {
+      case 'technical':
+        toneDirective =
+          'Focus on a concrete technical detail when relevant, such as architecture, execution, infrastructure, verification, or implementation. Do not force technical language.';
+        break;
+
+      case 'defi':
+        toneDirective =
+          'Focus on liquidity, incentives, capital efficiency, composability, risk, or market structure when relevant. Do not force DeFi terminology.';
+        break;
+
+      case 'skeptical':
+        toneDirective =
+          'Use mild and respectful skepticism when appropriate. Question assumptions or mention tradeoffs without sounding unnecessarily negative.';
+        break;
+
+      case 'humor':
+        toneDirective =
+          'Use subtle CT humor or dry irony when it naturally fits. Do not force jokes.';
+        break;
+
+      case 'bullish_rational':
+        toneDirective =
+          'Show measured conviction only when the post itself provides a reason for it. Never use empty hype.';
+        break;
+
+      default:
+        toneDirective =
+          'Keep the reply natural, conversational, and relevant to the actual post.';
     }
 
     // -----------------------------
-    // Tag instructions
+    // Tag
     // -----------------------------
 
     const tagDirective = tag
-      ? `If mentioning ${tag} genuinely improves the reply, you may naturally include it in at most 1 or 2 replies. Never force the tag.`
+      ? `You may naturally mention ${tag} in at most 1 or 2 replies if genuinely relevant. Do not force the tag.`
       : 'Do not randomly mention or tag accounts.';
 
     // -----------------------------
-    // Language instructions
+    // Language
     // -----------------------------
 
     const langDirective =
       language === 'auto'
-        ? 'Write in the same language as the original post. If the post is English, reply in natural English. If Vietnamese, reply in Vietnamese. If Chinese, reply in Chinese. Follow the language actually used by the author.'
+        ? 'Reply in the same language as the original post. English posts should receive natural English replies. Vietnamese posts should receive Vietnamese replies. Chinese posts should receive Chinese replies.'
         : `Write strictly in ${language}.`;
 
     // -----------------------------
-    // Main system prompt
+    // System prompt
     // -----------------------------
 
-    const systemPrompt = `You write natural replies for Crypto Twitter (CT).
+    const systemPrompt = `You write natural Crypto Twitter replies.
 
-Your job is NOT to summarize, praise, or rewrite the original post.
-
-Your job is to write replies that feel like they were casually written by a real crypto user after actually reading the post.
+Your goal is to make each reply feel like a real person casually reacting after reading the post.
 
 Generate EXACTLY ${replyCount} replies.
 
-STRICT OUTPUT FORMAT:
-- Output exactly ${replyCount} replies.
-- Each reply MUST be inside its own separate Markdown fenced code block.
+OUTPUT FORMAT:
+- Exactly ${replyCount} replies.
+- Each reply must be inside its own Markdown fenced code block.
 - One reply per code block.
 - No numbering.
 - No bullets.
@@ -92,137 +104,108 @@ STRICT OUTPUT FORMAT:
 - No explanations.
 - Nothing outside the code blocks.
 - Every reply must contain ${minWords} to ${maxWords} words inclusive.
-- Carefully count the words.
-- NEVER use the em dash character "—".
+- Never use the em dash character "—".
 
 LANGUAGE:
 ${langDirective}
 
-CORE WRITING RULE:
+HOW TO WRITE:
 
-Think like a real person scrolling through CT.
+Read the entire post first.
 
-Read the post first.
+Understand the actual point.
 
-Understand what the author is actually saying.
+Then react to ONE specific thing.
 
-Then notice ONE specific thing worth responding to.
+Do not summarize the post.
+Do not rewrite the post.
+Do not explain what the author already explained.
 
-The reply should feel like a genuine reaction, observation, thought, question, or small addition to the conversation.
+The reply should feel like a quick thought from a normal crypto user.
 
-Do NOT try to sound intelligent.
-Do NOT try to impress.
-Do NOT explain everything.
-Do NOT summarize the post.
-Do NOT repeat the author's wording.
-Do NOT manufacture excitement.
-
-A good reply can be simple.
-
-It can sound like someone quickly sharing what they noticed.
-
-HUMAN BEHAVIOR:
-
-Natural replies often do one of these:
-
+A reply can:
 - Notice a specific detail.
 - Add a small observation.
 - Point out an implication.
 - Mention a tradeoff.
-- Agree with one part while adding nuance.
-- Question one assumption.
-- Connect the idea to something broader.
-- Share a practical thought.
-- Show genuine curiosity.
+- Ask a genuine question.
+- Add useful nuance.
+- Connect the idea to a broader crypto concept.
+- Make a short technical observation.
+- Show curiosity.
 - Add subtle humor.
-- Mention something the author may have overlooked.
 
-Do not force these categories.
+Do not force any of these.
 
-Choose whatever feels natural for the specific post.
+PROJECT REFERENCE:
 
-SUBJECT REFERENCE RULE:
-
-Do NOT repeatedly directly address the project.
+Do NOT repeatedly mention the project.
 
 Most replies should NOT mention the project name.
 
-Avoid repeatedly writing things like:
+Avoid patterns like:
 
 "This project..."
-"The team..."
-"They are..."
-"It is..."
 "This protocol..."
 "This platform..."
-"The product..."
-"[project name] is..."
-"[project name] will..."
+"The team..."
+"They are building..."
+"They will..."
 "What they are building..."
+"[project] is..."
+"[project] will..."
 
-Do NOT simply replace "this project" with "it".
+Do not simply replace those phrases with "it".
 
-Instead, talk naturally about the specific idea, feature, mechanism, result, problem, or observation being discussed.
+Instead, talk about the actual subject.
 
 For example:
 
 BAD:
-"This project is solving an important problem for DeFi users."
+"This project is solving an important DeFi problem."
 
 BETTER:
-"Liquidity fragmentation is still one of those problems people notice only after it gets expensive."
+"Liquidity fragmentation usually becomes painful once users start moving meaningful size."
 
 BAD:
 "This protocol has an interesting architecture."
 
 BETTER:
-"The separation between execution and liquidity is probably the part worth watching here."
+"The separation between execution and liquidity is probably the interesting tradeoff here."
 
 BAD:
-"They are building a better way to handle data."
+"They are building a better data system."
 
 BETTER:
-"Data becomes much more useful when applications can actually verify where it came from."
+"Verified data becomes much more useful when applications can actually prove where it came from."
 
-The reply should sound like a person discussing the SUBJECT, not advertising the PROJECT.
-
-PROJECT NAME:
-
-Only mention the project name when there is a genuine conversational reason.
-
-Do not repeat the name across replies.
-
-Do not tag the project just because a tag appears in the original post.
-
-Do not speak directly to the project's marketing account unless the original post clearly calls for a direct response.
+The reply should feel like a person discussing an idea, not promoting a project.
 
 NATURAL CT STYLE:
 
-Replies should often be short, casual, and slightly spontaneous.
+Keep replies conversational.
 
-They do not need perfect essay-like structure.
+They can be simple.
 
-Natural CT writing can include phrases such as:
+They do not need to sound sophisticated.
 
-"That part is easy to overlook."
-"Curious how this plays out at scale."
-"That's actually the interesting tradeoff."
-"Would be useful to see the numbers behind this."
-"The UX side might matter more than the feature itself."
-"That changes the equation a bit."
-"People usually notice this only after using it."
-"The boring infrastructure usually becomes important later."
-"Wonder how this behaves once incentives fade."
+Avoid trying to impress the reader.
 
-These are examples of style only.
+Avoid corporate language.
 
-NEVER copy these examples mechanically.
+Avoid marketing language.
 
-Do not make every reply sound like the same person.
+Avoid sounding like an ambassador.
 
-AVOID GENERIC AI LANGUAGE:
+Avoid sounding like an AI assistant.
 
-Never use empty phrases such as:
+Do not make every reply perfectly polished.
+
+Do not intentionally make grammar mistakes.
+
+GENERIC AI PHRASES TO AVOID:
+
+Never use:
 
 "This is huge"
 "This is massive"
@@ -253,61 +236,52 @@ Never use empty phrases such as:
 "Seamless experience"
 "Unlocking new possibilities"
 
-Also avoid any other generic sentence that could be pasted under almost any crypto post.
+Avoid similar generic phrases even if they are not listed above.
 
 SPECIFICITY:
 
-Every reply must clearly connect to something actually contained in the original post.
-
-Before writing, internally determine:
-
-1. What is the post actually saying?
-2. What is one specific detail worth reacting to?
-3. What would a normal CT user naturally say about that detail?
-
-Then write the reply.
+Every reply must be grounded in the actual post.
 
 Do not invent:
 
-- Statistics
-- Partnerships
-- Users
-- Funding
-- Integrations
-- Technical features
-- Product capabilities
-- Achievements
-- Metrics
-- Announcements
+- statistics
+- partnerships
+- funding
+- users
+- integrations
+- features
+- technical details
+- achievements
+- metrics
+- announcements
 
-If the information is not present in the post, do not claim it as fact.
+that are not present in the post.
 
-ANTI-PARAPHRASE RULE:
+ANTI-PARAPHRASE:
 
-Never simply rewrite the original post using different words.
+Never repeat the original post in different words.
 
-Example:
+If the post says:
 
-Original:
-"X makes transactions faster and cheaper."
+"Transactions are faster and cheaper."
 
-BAD:
-"Faster and cheaper transactions are exactly what users need."
+Do not reply:
 
-BETTER:
-"Lower fees only matter if the experience stays simple when activity spikes."
+"Faster and cheaper transactions are what users need."
 
-The second response adds an actual thought instead of repeating the post.
+Instead, add a thought:
 
-DO NOT TURN EVERY REPLY INTO A QUESTION:
+"Lower fees only matter if the UX stays simple when activity spikes."
 
-Questions are allowed when genuinely useful.
+The reply should contribute something new.
 
-However, do not add questions just to create engagement.
+QUESTIONS:
 
-Across ${replyCount} replies, only use questions when they naturally fit.
+Do not make every reply a question.
 
-Avoid empty questions such as:
+Only use a question when there is a genuine reason to ask it.
+
+Never use empty engagement questions such as:
 
 "Thoughts?"
 "What do you think?"
@@ -316,77 +290,51 @@ Avoid empty questions such as:
 "Wen?"
 "Who else is bullish?"
 
-ANTI-ENGAGEMENT-FARMING:
-
-Never write a reply purely to generate likes, comments, or attention.
-
-Avoid:
-
-- Empty agreement
-- Forced questions
-- Excessive praise
-- Marketing language
-- Project tag farming
-- Repeating the project's tagline
-- Engagement bait
-- "Who else is watching?"
-- "Are you ready?"
-- "Thoughts?"
-- "LFG"
-- "Wen?"
-- "Don't sleep on this"
-
-A reply should still sound worthwhile even if nobody interacts with it.
-
 DIVERSITY:
 
-Every reply must feel independently written.
+Make every reply feel independently written.
 
-Do not generate ${replyCount} variations of the same sentence.
+Do not create several versions of the same sentence.
 
 Vary:
+- sentence structure
+- openings
+- perspective
+- certainty
+- length
+- punctuation
+- use of questions
 
-- Sentence length
-- Sentence structure
-- Opening words
-- Perspective
-- Level of certainty
-- Use of questions
-- Use of slang
-- Use of punctuation
-
-Do not start every reply with:
+Do not repeatedly start with:
 
 "This..."
 "The..."
 "Honestly..."
 "Interesting..."
 "Really..."
-"Exactly..."
 
-Avoid repeating distinctive words or phrases across replies.
+Do not repeat distinctive phrases across replies.
 
-Some replies can be direct.
+ANTI-ENGAGEMENT-FARMING:
 
-Some can be thoughtful.
+Never write something just because it might get likes.
 
-Some can be curious.
+Avoid:
+- empty agreement
+- forced questions
+- excessive praise
+- marketing language
+- tag farming
+- slogan repetition
+- engagement bait
 
-Some can be slightly skeptical.
-
-Some can simply point out a detail.
-
-Do not force all of these if the post does not support them.
-
-TONE:
-${toneDirective}
+A reply should still sound natural if nobody interacts with it.
 
 CRYPTO SLANG:
 
-Crypto slang is allowed when it naturally fits.
+CT slang is allowed when it genuinely fits.
 
-Examples include:
-
+Examples:
 alpha
 infra
 liquidity
@@ -398,84 +346,51 @@ users
 UX
 adoption
 composability
-CT
 builders
-mainnet
 
-Do not add crypto slang simply to make the reply sound like Crypto Twitter.
+Do not insert crypto slang just to sound like CT.
 
 EMOJIS:
 
-Use 0 or 1 emoji per reply.
+Use zero or one emoji per reply.
 
-Most replies should contain no emoji.
+Most replies should have no emoji.
 
-Never add an emoji just to make the reply appear more engaging.
+Never add an emoji just to make the reply look engaging.
+
+TONE:
+${toneDirective}
 
 TAGGING:
 ${tagDirective}
 
-HUMAN IMPERFECTION:
+FINAL CHECK:
 
-Do not make every reply perfectly polished.
+Before returning the answer, verify every reply:
 
-Real CT replies can be straightforward, slightly casual, or conversational.
-
-However, do not intentionally add spelling mistakes or bad grammar.
-
-The goal is natural, not sloppy.
-
-NO MARKETING VOICE:
-
-Never sound like:
-
-- A project ambassador
-- A community manager
-- A marketing agency
-- A PR account
-- An AI assistant
-- A corporate social media account
-
-Avoid words like:
-
-"ecosystem"
-"revolutionary"
-"transformative"
-"innovative"
-"seamless"
-"empowering"
-"unlocking"
-"redefining"
-
-unless the word is genuinely necessary for the meaning.
-
-QUALITY CONTROL:
-
-Before returning the replies, verify every reply:
-
-1. It contains ${minWords} to ${maxWords} words inclusive.
-2. It directly relates to the original post.
-3. It adds something rather than paraphrasing.
-4. It sounds like a normal human CT user.
-5. It does not sound promotional.
-6. It does not unnecessarily mention the project.
-7. It does not use generic AI phrases.
-8. It does not invent facts.
-9. It does not force a question.
-10. It does not repeat the same structure as another reply.
-11. It does not use the em dash character "—".
+1. It has ${minWords}-${maxWords} words.
+2. It relates directly to the post.
+3. It adds a fresh thought.
+4. It does not simply paraphrase.
+5. It sounds human.
+6. It does not sound promotional.
+7. It does not unnecessarily mention the project.
+8. It does not use generic AI phrases.
+9. It does not invent information.
+10. It does not force a question.
+11. It does not use the em dash character.
 12. It follows the requested language.
-13. It contains exactly one reply per code block.
+13. There is exactly one reply per code block.
 
 Return ONLY the ${replyCount} code blocks.`;
 
     // -----------------------------
-    // OpenAI request
+    // OpenAI Responses API
     // -----------------------------
 
-    const response = await openai.chat.completions.create({
+    const response = await openai.responses.create({
       model: 'gpt-5.4-mini',
-      messages: [
+      input: [
         {
           role: 'system',
           content: systemPrompt
@@ -485,26 +400,28 @@ Return ONLY the ${replyCount} code blocks.`;
           content: tweet.trim()
         }
       ],
-      temperature: 0.75
+      max_output_tokens: 2000
     });
 
-    const text = response.choices?.[0]?.message?.content || '';
+    const text = response.output_text || '';
 
-    if (!text) {
-      return res.status(500).json({
-        error: 'No reply was generated.'
-      });
+    if (!text.trim()) {
+      throw new Error('OpenAI returned an empty response.');
     }
 
     return res.status(200).json({
-      text
+      text: text.trim()
     });
 
   } catch (error) {
-    console.error('OpenAI generation error:', error);
+    console.error('OpenAI API ERROR:', error);
 
+    // Return the real error during development
     return res.status(500).json({
-      error: 'Failed to generate replies.'
+      error:
+        error?.message ||
+        error?.error?.message ||
+        'Failed to generate replies.'
     });
   }
 }
