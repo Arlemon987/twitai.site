@@ -2,18 +2,10 @@
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Twit AI - Generating Tweet Reply</title>
   <meta name="description" content="Twit AI generates natural replies for X and Twitter.">
   <meta name="theme-color" content="#070a12">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Twit AI">
-  <meta name="mobile-web-app-capable" content="yes">
-
-  <!-- PWA Manifest for Chrome PC & Android App Installation -->
-  <link rel="manifest" href='data:application/manifest+json,{"name":"Twit AI - Tweet Reply Generator","short_name":"Twit AI","start_url":".","display":"standalone","background_color":"#070a12","theme_color":"#070a12","description":"Natural replies for X and Twitter","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/733/733579.png","sizes":"192x192","type":"image/png"},{"src":"https://cdn-icons-png.flaticon.com/512/733/733579.png","sizes":"512x512","type":"image/png"}]}'>
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/733/733579.png">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,240 +14,57 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
   <style>
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { width: 100%; height: 100%; margin: 0; padding: 0; }
-    html { -webkit-text-size-adjust: 100%; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; }
     body {
-      font-family: Inter, system-ui, -apple-system, sans-serif;
-      background: #070a12;
+      font-family: Inter, system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(14,165,233,.10), transparent 28%),
+        radial-gradient(circle at 85% 80%, rgba(99,102,241,.10), transparent 30%),
+        #070a12;
       color: #e2e8f0;
       overflow: hidden;
-      position: fixed;
-      inset: 0;
-      touch-action: manipulation;
     }
-
-    /* Animated background orbs */
-    .bg-orbs {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      overflow: hidden;
-      pointer-events: none;
-    }
-    .bg-orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(100px);
-      opacity: 0.25;
-      will-change: transform;
-    }
-    .bg-orb-1 {
-      width: 400px; height: 400px;
-      background: radial-gradient(circle, #0ea5e9, transparent 70%);
-      top: -10%; left: -5%;
-      animation: orbFloat1 25s ease-in-out infinite;
-    }
-    .bg-orb-2 {
-      width: 350px; height: 350px;
-      background: radial-gradient(circle, #6366f1, transparent 70%);
-      bottom: -10%; right: -5%;
-      animation: orbFloat2 30s ease-in-out infinite;
-    }
-    .bg-orb-3 {
-      width: 300px; height: 300px;
-      background: radial-gradient(circle, #06b6d4, transparent 70%);
-      top: 40%; left: 50%;
-      animation: orbFloat3 20s ease-in-out infinite;
-    }
-    @keyframes orbFloat1 {
-      0%,100% { transform: translate(0,0) scale(1); }
-      50% { transform: translate(60px,80px) scale(1.15); }
-    }
-    @keyframes orbFloat2 {
-      0%,100% { transform: translate(0,0) scale(1); }
-      50% { transform: translate(-80px,-60px) scale(1.2); }
-    }
-    @keyframes orbFloat3 {
-      0%,100% { transform: translate(-50%,-50%) scale(1); }
-      50% { transform: translate(-30%,-70%) scale(0.85); }
-    }
-
-    /* Grid overlay */
-    .grid-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-      background-image:
-        linear-gradient(rgba(51,65,85,0.07) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(51,65,85,0.07) 1px, transparent 1px);
-      background-size: 40px 40px;
-      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, #000 30%, transparent 100%);
-      -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, #000 30%, transparent 100%);
-    }
-
     .glass {
       background: rgba(9,13,22,.82);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(51,65,85,.55);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(51,65,85,.65);
     }
-    .glass-strong {
-      background: rgba(9,13,22,.92);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(51,65,85,.6);
-    }
-
     .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
-    .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #334155 transparent; }
-
-    .modal-backdrop {
-      background: rgba(0,0,0,.72);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-    }
-
-    .safe-top { padding-top: max(0px, env(safe-area-inset-top)); }
+    .modal-backdrop { background: rgba(0,0,0,.72); backdrop-filter: blur(8px); }
     .safe-bottom { padding-bottom: max(.5rem, env(safe-area-inset-bottom)); }
-    .safe-left { padding-left: max(0px, env(safe-area-inset-left)); }
-    .safe-right { padding-right: max(0px, env(safe-area-inset-right)); }
-
-    /* Glow effects */
-    .glow-sky { box-shadow: 0 0 30px rgba(14,165,233,.25), 0 0 60px rgba(14,165,233,.1); }
-    .glow-indigo { box-shadow: 0 0 30px rgba(99,102,241,.25), 0 0 60px rgba(99,102,241,.1); }
-    .text-glow-sky { text-shadow: 0 0 20px rgba(14,165,233,.5); }
-
-    /* Gradient text */
-    .gradient-text {
-      background: linear-gradient(135deg, #38bdf8, #818cf8, #22d3ee);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    /* Animated gradient button */
-    .btn-gradient {
-      background: linear-gradient(135deg, #0ea5e9, #6366f1);
-      background-size: 200% 200%;
-      animation: gradientShift 4s ease infinite;
-    }
-    @keyframes gradientShift {
-      0%,100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-
-    /* Pulse glow */
-    .pulse-glow {
-      animation: pulseGlow 2s ease-in-out infinite;
-    }
-    @keyframes pulseGlow {
-      0%,100% { box-shadow: 0 0 12px rgba(16,185,129,.5); }
-      50% { box-shadow: 0 0 24px rgba(16,185,129,.8); }
-    }
-
-    /* Shimmer loading */
-    .shimmer {
-      background: linear-gradient(90deg, rgba(51,65,85,0.3) 25%, rgba(51,65,85,0.6) 50%, rgba(51,65,85,0.3) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-    }
-    @keyframes shimmer {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
-    }
-
-    /* Slide in animation */
-    .slide-in {
-      animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Scale in */
-    .scale-in {
-      animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    @keyframes scaleIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    /* Bounce dots */
-    .dot-bounce {
-      animation: dotBounce 1.4s ease-in-out infinite both;
-    }
-    @keyframes dotBounce {
-      0%,80%,100% { transform: scale(0.6); opacity: 0.4; }
-      40% { transform: scale(1.2); opacity: 1; }
-    }
-
-    /* Spin */
-    .spin { animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Mobile optimizations */
     @media (max-width: 767px) {
+      body { overflow: hidden; }
       .mobile-full { width: 100% !important; max-width: none !important; }
-      .glass { backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
     }
-
-    /* iOS safe area for fixed elements */
-    @supports (padding: max(0px)) {
-      .safe-bottom-nav { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
-    }
-
-    /* Focus styles */
-    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
-      outline: 2px solid #38bdf8;
-      outline-offset: 2px;
-    }
-
-    /* Prevent zoom on input focus iOS */
-    @media (max-width: 767px) {
-      input, select, textarea { font-size: 16px !important; }
-    }
-
-    /* Smooth scroll */
-    .smooth-scroll { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
   </style>
 </head>
 
 <body>
-  <!-- Background visuals -->
-  <div class="bg-orbs">
-    <div class="bg-orb bg-orb-1"></div>
-    <div class="bg-orb bg-orb-2"></div>
-    <div class="bg-orb bg-orb-3"></div>
-  </div>
-  <div class="grid-overlay"></div>
-
-  <div id="app" class="h-[100dvh] w-full flex overflow-hidden relative">
+  <div id="app" class="h-[100dvh] w-full flex overflow-hidden">
 
     <!-- Mobile overlay -->
     <div id="sidebarOverlay"
-      class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-40 md:hidden transition-opacity duration-300"></div>
+      class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-40 md:hidden"></div>
 
     <!-- Sidebar -->
     <aside id="sidebar"
-      class="w-[85vw] max-w-[288px] flex-shrink-0 glass-strong flex flex-col fixed md:relative inset-y-0 left-0 z-50 -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out border-r border-slate-800/80 shadow-2xl md:shadow-none safe-top safe-left">
+      class="w-[85vw] max-w-[288px] flex-shrink-0 bg-[#090d16]/98 backdrop-blur-2xl flex flex-col fixed md:relative inset-y-0 left-0 z-50 -translate-x-full md:translate-x-0 transition-transform duration-300 border-r border-slate-800/80 shadow-2xl md:shadow-none">
 
       <div class="p-4 sm:p-5 border-b border-slate-800/70 flex-shrink-0">
         <div class="flex items-center gap-3">
           <div class="relative w-10 h-10 flex-shrink-0">
-            <div class="absolute inset-0 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-cyan-400 blur-[6px] opacity-70 animate-pulse"></div>
+            <div class="absolute inset-0 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-cyan-400 blur-[4px] opacity-70"></div>
             <div class="relative w-full h-full rounded-2xl bg-[#090d16] border border-sky-400/40 flex items-center justify-center">
               <i class="fa-solid fa-comment-dots text-sky-400 text-lg"></i>
             </div>
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-1.5">
-              <h1 class="text-lg font-black tracking-tight gradient-text">Twit AI</h1>
+              <h1 class="text-lg font-black tracking-tight text-white">Twit AI</h1>
               <span class="px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-400/30 text-[8px] font-bold text-sky-400">PRO</span>
             </div>
             <p class="text-[10px] text-sky-400/90 font-medium">Generating Tweet Reply</p>
@@ -263,7 +72,7 @@
         </div>
 
         <button id="newChatBtn"
-          class="btn-gradient w-full mt-5 flex items-center justify-center gap-2 px-4 py-3 rounded-xl hover:opacity-90 text-white font-semibold text-xs shadow-lg shadow-sky-500/20 transition active:scale-[0.97]">
+          class="w-full mt-5 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 via-sky-600 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-sky-500/20 transition">
           <i class="fa-solid fa-feather-pointed"></i>
           <span>New Tweet Reply</span>
         </button>
@@ -274,20 +83,11 @@
         <i class="fa-solid fa-clock-rotate-left"></i>
       </div>
 
-      <div id="chatList" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar smooth-scroll px-3 space-y-1"></div>
+      <div id="chatList" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-3 space-y-1"></div>
 
-      <div class="p-3 border-t border-slate-800/70 space-y-2 bg-[#060910]/90 flex-shrink-0 safe-bottom">
-        <!-- Install App Sidebar Button -->
-        <button id="sidebarInstallBtn"
-          class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-300 hover:text-white transition text-xs font-medium active:scale-[0.98]">
-          <span class="flex items-center gap-2.5">
-            <i class="fa-solid fa-cloud-arrow-down text-sky-400"></i> Install App
-          </span>
-          <span id="sidebarInstallBadge" class="text-[9px] px-1.5 py-0.5 rounded bg-sky-400/20 text-sky-300">Fast Setup</span>
-        </button>
-
+      <div class="p-3 border-t border-slate-800/70 space-y-2 bg-[#060910]/90 flex-shrink-0">
         <button id="configBtn"
-          class="w-full flex items-center justify-between px-3 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-xs font-medium active:scale-[0.98]">
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-xs font-medium">
           <span class="flex items-center gap-2.5">
             <i class="fa-solid fa-sliders text-sky-400"></i> Generation Rules
           </span>
@@ -304,47 +104,28 @@
           </div>
           <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-500"></i>
         </a>
-
-        <a href="mailto:admin@twitai.app"
-          class="flex items-center justify-between px-3 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-sky-500/40 text-slate-400 hover:text-white transition text-xs active:scale-[0.98]">
-          <div class="flex items-center gap-2">
-            <span class="w-5 h-5 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-400 border border-sky-500/20">
-              <i class="fa-solid fa-envelope text-[10px]"></i>
-            </span>
-            <span>admin@twitai.app</span>
-          </div>
-          <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-500"></i>
-        </a>
       </div>
     </aside>
 
     <!-- Main -->
-    <main class="flex-1 min-w-0 min-h-0 flex flex-col relative overflow-hidden z-10">
+    <main class="flex-1 min-w-0 min-h-0 flex flex-col relative overflow-hidden">
 
       <!-- Top bar -->
-      <header class="h-14 flex-shrink-0 border-b border-slate-800/60 glass flex items-center justify-between px-2.5 sm:px-4 z-30 safe-top">
+      <header class="h-14 flex-shrink-0 border-b border-slate-800/60 bg-[#090d16]/80 backdrop-blur-md flex items-center justify-between px-2.5 sm:px-4 z-30">
         <div class="flex items-center gap-2 min-w-0">
           <button id="toggleSidebar"
-            class="md:hidden w-9 h-9 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition">
+            class="md:hidden w-9 h-9 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center flex-shrink-0">
             <i class="fa-solid fa-bars"></i>
           </button>
           <div class="flex items-center gap-2 min-w-0">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-glow flex-shrink-0"></span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse flex-shrink-0"></span>
             <span class="text-[11px] sm:text-xs font-semibold text-slate-200 truncate">Generating Tweet Reply</span>
           </div>
         </div>
 
-        <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-          <!-- Install App Header Trigger -->
-          <button id="headerInstallBtn"
-            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium text-sky-300 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/40 shadow-sm shadow-sky-500/10 transition active:scale-95"
-            title="Install App / Add to Home Screen">
-            <i class="fa-solid fa-arrow-down-to-bracket text-sky-400"></i>
-            <span class="hidden sm:inline">Install App</span>
-          </button>
-
+        <div class="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
           <a href="https://x.com/lemonar777" target="_blank" rel="noopener noreferrer"
-            class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-400 bg-slate-800/70 hover:text-white border border-slate-700/60 transition">
+            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-400 bg-slate-800/70 hover:text-white border border-slate-700/60">
             <i class="fa-brands fa-x-twitter"></i> @lemonar777
           </a>
 
@@ -354,36 +135,36 @@
               100 free tweets
             </button>
             <button id="avatarBtn"
-              class="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-violet-500 text-white text-xs font-bold overflow-hidden border border-slate-700 active:scale-90 transition">
+              class="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-violet-500 text-white text-xs font-bold overflow-hidden border border-slate-700">
               U
             </button>
-            <button id="accountBtn" class="hidden sm:block text-xs text-slate-300 hover:text-white px-2 py-1 rounded">Account</button>
-            <button id="logoutBtn" class="hidden sm:block text-xs text-slate-400 hover:text-white px-2 py-1 rounded">Logout</button>
+            <button id="accountBtn" class="hidden sm:block text-xs text-slate-300 hover:text-white">Account</button>
+            <button id="logoutBtn" class="hidden sm:block text-xs text-slate-400 hover:text-white">Logout</button>
           </div>
 
           <button id="loginBtn"
-            class="btn-gradient px-4 py-2 rounded-lg text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-lg shadow-sky-500/20">
+            class="px-3 py-2 rounded-lg bg-white text-slate-900 text-xs font-semibold hover:bg-slate-100 transition">
             Sign in
           </button>
         </div>
       </header>
 
       <!-- Chat area -->
-      <div id="chatContainer" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar smooth-scroll relative">
+      <div id="chatContainer" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar relative">
         <div id="messages" class="w-full max-w-3xl mx-auto px-2.5 py-4 sm:px-4 md:p-6 space-y-4 sm:space-y-6"></div>
       </div>
 
       <!-- Composer -->
-      <div class="relative z-20 flex-shrink-0 bg-gradient-to-t from-[#070a12] via-[#070a12]/98 to-transparent pt-2 sm:pt-3 safe-bottom-nav">
+      <div class="relative z-20 flex-shrink-0 bg-gradient-to-t from-[#070a12] via-[#070a12]/98 to-transparent pt-2 sm:pt-3 safe-bottom">
         <div class="w-full max-w-3xl mx-auto px-2.5 sm:px-4">
-          <div class="glass rounded-2xl p-2 shadow-2xl shadow-black/40">
+          <div class="glass rounded-2xl p-2 shadow-2xl">
 
             <div class="flex items-center justify-between gap-2 px-3 pt-1 pb-2 border-b border-slate-800/60 text-[10px] sm:text-[11px] text-slate-400">
               <span class="flex items-center gap-1.5 min-w-0">
                 <i class="fa-solid fa-quote-left text-sky-400 flex-shrink-0"></i>
                 <span class="truncate">Paste exact tweet text here <strong class="text-slate-300 font-medium">(URLs ignored)</strong></span>
               </span>
-              <button id="pasteBtn" type="button" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 text-[10px] sm:text-[11px] font-medium flex-shrink-0 active:scale-90 transition">
+              <button id="pasteBtn" type="button" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 text-[10px] sm:text-[11px] font-medium flex-shrink-0">
                 <i class="fa-regular fa-clipboard"></i> <span class="hidden xs:inline">Paste</span>
               </button>
             </div>
@@ -391,30 +172,22 @@
             <div class="relative">
               <textarea id="chatInput" rows="2"
                 placeholder="Paste the tweet text here..."
-                enterkeyhint="send"
-                class="w-full bg-transparent px-3 py-3 pr-3 text-sm text-slate-100 placeholder-slate-500 resize-none outline-none custom-scrollbar max-h-40 min-h-[54px] leading-relaxed"></textarea>
+                class="w-full bg-transparent px-3 py-3 pr-12 text-sm text-slate-100 placeholder-slate-500 resize-none outline-none custom-scrollbar max-h-40 min-h-[54px] leading-relaxed"></textarea>
             </div>
 
             <div class="flex items-center justify-between px-2 pt-1 border-t border-slate-800/40">
               <span id="charCount" class="text-[9px] sm:text-[10px] text-slate-500 font-mono">0 chars | 0 words</span>
               <button id="sendBtn"
-                class="w-10 h-10 rounded-xl btn-gradient hover:opacity-90 text-white shadow-lg shadow-sky-500/25 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition active:scale-90"
+                class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white shadow-md shadow-sky-500/25 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition"
                 aria-label="Generate Replies">
-                <i class="fa-solid fa-arrow-up text-sm"></i>
+                <i class="fa-solid fa-arrow-up text-xs"></i>
               </button>
             </div>
           </div>
 
           <div class="hidden sm:flex items-center justify-between text-[10px] text-slate-500 mt-2 px-1">
             <span>Twit AI • This site is for Generating Tweet Reply</span>
-            <div class="flex items-center gap-3">
-              <a href="mailto:admin@twitai.app" class="hover:text-sky-400 transition flex items-center gap-1.5">
-                <i class="fa-regular fa-envelope text-sky-400"></i>
-                <span>admin@twitai.app</span>
-              </a>
-              <span class="text-slate-700">•</span>
-              <span>Developed by @lemonar777</span>
-            </div>
+            <span>Developed by @lemonar777</span>
           </div>
         </div>
       </div>
@@ -423,34 +196,30 @@
 
   <!-- Login modal -->
   <div id="loginModal" class="fixed inset-0 modal-backdrop z-[100] hidden items-center justify-center p-4">
-    <div class="glass w-full max-w-sm rounded-3xl p-6 relative scale-in">
-      <button class="modalClose absolute top-4 right-4 w-9 h-9 rounded-full hover:bg-slate-800 text-slate-500 hover:text-white flex items-center justify-center transition" data-modal="loginModal">
+    <div class="glass w-full max-w-sm rounded-2xl p-6 relative">
+      <button class="modalClose absolute top-4 right-4 text-slate-500 hover:text-white" data-modal="loginModal">
         <i class="fa-solid fa-xmark"></i>
       </button>
       <div class="text-center">
-        <div class="relative w-16 h-16 mx-auto">
-          <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 blur-lg opacity-60 animate-pulse"></div>
-          <div class="relative w-full h-full rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
-            <i class="fa-solid fa-comment-dots text-white text-2xl"></i>
-          </div>
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
+          <i class="fa-solid fa-comment-dots text-white text-xl"></i>
         </div>
-        <h2 class="text-xl font-bold gradient-text mt-4">Welcome to Twit AI</h2>
+        <h2 class="text-xl font-bold text-white mt-4">Welcome to Twit AI</h2>
         <p class="text-xs text-slate-400 mt-2">Sign in with Google to get 100 free tweet submissions.</p>
         <button id="googleLoginBtn"
-          class="w-full mt-6 py-3.5 rounded-xl bg-white text-slate-900 font-semibold text-sm hover:bg-slate-100 transition flex items-center justify-center gap-3 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed">
-          <i id="googleLoginIcon" class="fa-brands fa-google"></i>
-          <span id="googleLoginText">Continue with Google</span>
+          class="w-full mt-6 py-3 rounded-xl bg-white text-slate-900 font-semibold text-sm hover:bg-slate-100 transition flex items-center justify-center gap-3">
+          <i class="fa-brands fa-google"></i>
+          Continue with Google
         </button>
         <p id="loginError" class="text-xs text-rose-400 mt-3 hidden"></p>
-        <p class="text-[10px] text-slate-600 mt-4">By signing in you agree to our terms of service.</p>
       </div>
     </div>
   </div>
 
   <!-- Account modal -->
   <div id="accountModal" class="fixed inset-0 modal-backdrop z-[100] hidden items-center justify-center p-4">
-    <div class="glass w-full max-w-md rounded-3xl p-5 sm:p-6 relative max-h-[90dvh] overflow-y-auto custom-scrollbar scale-in">
-      <button class="modalClose absolute top-4 right-4 w-9 h-9 rounded-full hover:bg-slate-800 text-slate-500 hover:text-white flex items-center justify-center transition" data-modal="accountModal">
+    <div class="glass w-full max-w-md rounded-2xl p-5 sm:p-6 relative max-h-[90dvh] overflow-y-auto custom-scrollbar">
+      <button class="modalClose absolute top-4 right-4 text-slate-500 hover:text-white" data-modal="accountModal">
         <i class="fa-solid fa-xmark"></i>
       </button>
       <h2 class="text-lg font-bold text-white">Account</h2>
@@ -475,17 +244,8 @@
 
       <div id="subscriptionInfo" class="mt-3 rounded-xl bg-slate-900/80 border border-slate-800 p-4 text-xs text-slate-300"></div>
 
-      <div class="mt-3 px-3 py-2 rounded-xl bg-slate-900/50 border border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
-        <span class="flex items-center gap-2">
-          <i class="fa-solid fa-headset text-sky-400"></i> Need support?
-        </span>
-        <a href="mailto:admin@twitai.app" class="text-sky-400 hover:text-sky-300 font-medium hover:underline flex items-center gap-1">
-          admin@twitai.app
-        </a>
-      </div>
-
       <button id="subscribeFromAccount"
-        class="btn-gradient w-full mt-4 py-3.5 rounded-xl text-white font-semibold text-sm active:scale-[0.97] transition">
+        class="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-semibold text-sm">
         Subscribe
       </button>
     </div>
@@ -493,55 +253,43 @@
 
   <!-- Subscription modal -->
   <div id="subscriptionModal" class="fixed inset-0 modal-backdrop z-[100] hidden items-center justify-center p-4">
-    <div class="glass w-full max-w-lg rounded-3xl p-5 sm:p-6 relative max-h-[92dvh] overflow-y-auto custom-scrollbar scale-in">
-      <button class="modalClose absolute top-4 right-4 w-9 h-9 rounded-full hover:bg-slate-800 text-slate-500 hover:text-white flex items-center justify-center transition" data-modal="subscriptionModal">
+    <div class="glass w-full max-w-lg rounded-2xl p-5 sm:p-6 relative max-h-[92dvh] overflow-y-auto custom-scrollbar">
+      <button class="modalClose absolute top-4 right-4 text-slate-500 hover:text-white" data-modal="subscriptionModal">
         <i class="fa-solid fa-xmark"></i>
       </button>
 
       <h2 class="text-lg font-bold text-white">Subscribe to Twit AI</h2>
       <p class="text-xs text-slate-400 mt-1">Send the exact amount to the wallet below, then submit your transaction hash.</p>
 
-      <!-- Plans Grid -->
       <div id="planGrid" class="grid grid-cols-2 gap-2 mt-5"></div>
 
       <div class="mt-4 rounded-xl bg-slate-950/80 border border-slate-800 p-4">
-        <div class="flex items-center justify-between mb-1">
-          <div class="text-[10px] text-slate-500 uppercase">Network</div>
-          <button id="retryConfigBtn" class="text-[10px] text-sky-400 hover:underline hidden items-center gap-1">
-            <i class="fa-solid fa-rotate-right"></i> Refresh
-          </button>
-        </div>
-        <div id="paymentNetwork" class="text-sm text-white font-semibold">USDT (TRC20 / Arbitrum / ERC20)</div>
-
+        <div class="text-[10px] text-slate-500 uppercase mb-1">Network</div>
+        <div id="paymentNetwork" class="text-sm text-white font-semibold">Loading...</div>
         <div class="text-[10px] text-slate-500 uppercase mt-4 mb-1">Payment wallet</div>
         <div class="flex gap-2">
-          <input id="paymentWallet" readonly class="flex-1 min-w-0 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 font-mono">
-          <button id="copyWalletBtn" class="px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs active:scale-90 transition font-medium">Copy</button>
+          <input id="paymentWallet" readonly class="flex-1 min-w-0 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300">
+          <button id="copyWalletBtn" class="px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs">Copy</button>
         </div>
       </div>
 
       <label class="block text-xs font-medium text-slate-400 mt-4 mb-1.5">Transaction hash</label>
       <input id="txHashInput" type="text" placeholder="0x..." autocomplete="off"
-        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-sm text-white outline-none focus:border-sky-500 transition">
+        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-sm text-white outline-none focus:border-sky-500">
 
       <button id="submitPaymentBtn"
-        class="btn-gradient w-full mt-4 py-3.5 rounded-xl hover:opacity-90 text-white font-semibold text-sm disabled:opacity-40 active:scale-[0.97] transition">
+        class="w-full mt-4 py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-semibold text-sm disabled:opacity-40">
         Submit Payment for Review
       </button>
 
       <p id="paymentMessage" class="text-xs mt-3 hidden"></p>
-
-      <div class="mt-4 p-3 rounded-xl bg-slate-900/50 border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
-        <span>Need assistance with payment?</span>
-        <a href="mailto:admin@twitai.app" class="text-sky-400 hover:underline font-medium">admin@twitai.app</a>
-      </div>
     </div>
   </div>
 
-  <!-- Generation rules modal -->
+  <!-- Generation rules -->
   <div id="configModal" class="fixed inset-0 modal-backdrop z-[100] hidden items-center justify-center p-4">
-    <div class="glass w-full max-w-md rounded-3xl p-5 sm:p-6 relative max-h-[92dvh] overflow-y-auto custom-scrollbar scale-in">
-      <button id="closeConfigModal" class="absolute top-4 right-4 w-9 h-9 rounded-full hover:bg-slate-800 text-slate-500 hover:text-white flex items-center justify-center transition">
+    <div class="glass w-full max-w-md rounded-2xl p-5 sm:p-6 relative max-h-[92dvh] overflow-y-auto custom-scrollbar">
+      <button id="closeConfigModal" class="absolute top-4 right-4 text-slate-500 hover:text-white">
         <i class="fa-solid fa-xmark"></i>
       </button>
       <h2 class="text-lg font-bold text-white">Generation Rules</h2>
@@ -550,12 +298,12 @@
         <div>
           <label class="text-xs font-medium text-slate-400 block mb-1.5">Number of Replies</label>
           <input id="replyCountInput" type="number" min="1" max="10" value="5"
-            class="w-full px-3.5 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white text-center outline-none focus:border-sky-500 transition">
+            class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white text-center outline-none">
         </div>
 
         <div>
           <label class="text-xs font-medium text-slate-400 block mb-1.5">Reply Language</label>
-          <select id="languageSelect" class="w-full px-3.5 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white outline-none focus:border-sky-500 transition">
+          <select id="languageSelect" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white outline-none">
             <option value="auto">Auto detect</option>
             <option value="english">English</option>
             <option value="vietnamese">Vietnamese</option>
@@ -567,16 +315,16 @@
           <label class="text-xs font-medium text-slate-400 block mb-1.5">Words per Reply</label>
           <div class="flex items-center gap-3">
             <input id="minWordsInput" type="number" min="5" max="30" value="10"
-              class="w-full px-3.5 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white text-center outline-none focus:border-sky-500 transition">
+              class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white text-center outline-none">
             <span class="text-slate-500 text-xs">to</span>
             <input id="maxWordsInput" type="number" min="10" max="60" value="18"
-              class="w-full px-3.5 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white text-center outline-none focus:border-sky-500 transition">
+              class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white text-center outline-none">
           </div>
         </div>
 
         <div>
           <label class="text-xs font-medium text-slate-400 block mb-1.5">Reply Tone & Style</label>
-          <select id="toneSelector" class="w-full px-3.5 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white outline-none focus:border-sky-500 transition">
+          <select id="toneSelector" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white outline-none">
             <option value="balanced">Balanced CT (Organic & Casual)</option>
             <option value="technical">Technical / Protocol Deep-dive</option>
             <option value="defi">DeFi & Capital Mechanics</option>
@@ -589,153 +337,12 @@
         <div>
           <label class="text-xs font-medium text-slate-400 block mb-1.5">Include Ticker or Handle (Optional)</label>
           <input id="projectTag" type="text" placeholder="e.g. $BTC, @arbitrum"
-            class="w-full px-3.5 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white outline-none focus:border-sky-500 transition">
+            class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white outline-none">
         </div>
 
         <button id="saveConfigBtn"
-          class="btn-gradient w-full py-3.5 rounded-xl text-white font-semibold text-sm active:scale-[0.97] transition">
+          class="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-semibold text-sm">
           Apply Settings
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Install App Modal with Tabbed Instructions -->
-  <div id="installModal" class="fixed inset-0 modal-backdrop z-[100] hidden items-center justify-center p-4">
-    <div class="glass w-full max-w-lg rounded-3xl p-5 sm:p-6 relative max-h-[92dvh] overflow-y-auto custom-scrollbar scale-in">
-      <button class="modalClose absolute top-4 right-4 w-9 h-9 rounded-full hover:bg-slate-800 text-slate-500 hover:text-white flex items-center justify-center transition" data-modal="installModal">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/25 flex-shrink-0">
-          <i class="fa-solid fa-mobile-screen-button text-white text-xl"></i>
-        </div>
-        <div>
-          <h2 class="text-lg font-bold text-white flex items-center gap-2">
-            Install Twit AI App
-            <span id="detectedBadge" class="text-[9px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-normal border border-sky-400/30">Detected</span>
-          </h2>
-          <p class="text-xs text-slate-400">Launch fullscreen with instant response and no browser frame.</p>
-        </div>
-      </div>
-
-      <!-- One-click Direct Trigger for Chrome PC & Android -->
-      <div id="nativeInstallPromptCard" class="mt-4 hidden p-3.5 rounded-2xl bg-gradient-to-r from-sky-500/20 to-indigo-500/20 border border-sky-400/40">
-        <div class="flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <div class="text-xs font-bold text-white flex items-center gap-1.5">
-              <i class="fa-solid fa-bolt text-amber-400"></i> Instant Install Ready
-            </div>
-            <p class="text-[11px] text-slate-300 truncate">1-Click Chrome App Installation available!</p>
-          </div>
-          <button id="directInstallBtn" class="btn-gradient px-4 py-2 rounded-xl text-white font-semibold text-xs whitespace-nowrap shadow-md shadow-sky-500/20 active:scale-95 transition">
-            <i class="fa-solid fa-download mr-1"></i> Install Now
-          </button>
-        </div>
-      </div>
-
-      <!-- Platform Selection Tabs -->
-      <div class="mt-5 flex gap-1.5 p-1 rounded-xl bg-slate-900/90 border border-slate-800 text-xs overflow-x-auto custom-scrollbar">
-        <button class="installTabBtn flex-1 min-w-[75px] py-2 px-2.5 rounded-lg font-medium transition text-center" data-tab="android">
-          <i class="fa-brands fa-android mr-1"></i> Android
-        </button>
-        <button class="installTabBtn flex-1 min-w-[75px] py-2 px-2.5 rounded-lg font-medium transition text-center" data-tab="pc">
-          <i class="fa-brands fa-chrome mr-1"></i> PC Chrome
-        </button>
-        <button class="installTabBtn flex-1 min-w-[75px] py-2 px-2.5 rounded-lg font-medium transition text-center" data-tab="ios">
-          <i class="fa-brands fa-apple mr-1"></i> iOS
-        </button>
-        <button class="installTabBtn flex-1 min-w-[75px] py-2 px-2.5 rounded-lg font-medium transition text-center" data-tab="mac">
-          <i class="fa-solid fa-laptop mr-1"></i> Mac
-        </button>
-      </div>
-
-      <!-- Tab Content: Android Chrome -->
-      <div id="tab-android" class="installTabContent mt-4 space-y-3">
-        <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 space-y-2.5">
-          <div class="text-xs font-semibold text-sky-400 flex items-center gap-2">
-            <i class="fa-solid fa-circle-check"></i> Chrome for Android
-          </div>
-          <ol class="text-xs text-slate-300 space-y-2 list-decimal list-inside leading-relaxed">
-            <li>Tap the <strong class="text-white font-semibold">Install Now</strong> button above if visible.</li>
-            <li>Alternatively, tap the <strong class="text-white font-semibold"><i class="fa-solid fa-ellipsis-vertical mx-1"></i> (three dots)</strong> menu in the top right of Chrome.</li>
-            <li>Select <strong class="text-white font-semibold">"Install app"</strong> or <strong class="text-white font-semibold">"Add to Home screen"</strong>.</li>
-            <li>Tap <strong class="text-sky-400">"Install"</strong> to place Twit AI on your home screen and app drawer.</li>
-          </ol>
-        </div>
-      </div>
-
-      <!-- Tab Content: PC Chrome / Edge -->
-      <div id="tab-pc" class="installTabContent mt-4 space-y-3 hidden">
-        <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 space-y-2.5">
-          <div class="text-xs font-semibold text-sky-400 flex items-center gap-2">
-            <i class="fa-solid fa-desktop"></i> Google Chrome & Edge on Windows / Linux
-          </div>
-          <ol class="text-xs text-slate-300 space-y-2 list-decimal list-inside leading-relaxed">
-            <li>Look at the right side of the Chrome address bar for the <strong class="text-white font-semibold"><i class="fa-solid fa-circle-down mx-1 text-sky-400"></i> Install icon</strong>.</li>
-            <li>Click the icon and select <strong class="text-white font-semibold">"Install"</strong>.</li>
-            <li>Or click the <strong class="text-white font-semibold"><i class="fa-solid fa-ellipsis-vertical mx-1"></i> (three dots)</strong> menu &rarr; <strong class="text-white font-semibold">"Save and Share"</strong> &rarr; <strong class="text-sky-400">"Install Twit AI..."</strong></li>
-            <li>Twit AI will now run as an independent desktop application in its own standalone window.</li>
-          </ol>
-        </div>
-      </div>
-
-      <!-- Tab Content: iOS (iPhone / iPad) -->
-      <div id="tab-ios" class="installTabContent mt-4 space-y-3 hidden">
-        <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 space-y-2.5">
-          <div class="text-xs font-semibold text-sky-400 flex items-center gap-2">
-            <i class="fa-brands fa-apple"></i> Safari on iPhone & iPad
-          </div>
-          <ol class="text-xs text-slate-300 space-y-2.5 leading-relaxed">
-            <li class="flex items-start gap-2">
-              <span class="w-5 h-5 rounded-full bg-slate-800 text-sky-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">1</span>
-              <span>Open this site in <strong class="text-white">Safari</strong> (iOS requirement for home screen apps).</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <span class="w-5 h-5 rounded-full bg-slate-800 text-sky-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">2</span>
-              <span>Tap the <strong class="text-white"><i class="fa-solid fa-arrow-up-from-bracket mx-1 text-sky-400"></i> Share</strong> button in the bottom menu bar.</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <span class="w-5 h-5 rounded-full bg-slate-800 text-sky-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">3</span>
-              <span>Scroll down and select <strong class="text-white"><i class="fa-regular fa-square-plus mx-1 text-emerald-400"></i> "Add to Home Screen"</strong>.</span>
-            </li>
-            <li class="flex items-start gap-2">
-              <span class="w-5 h-5 rounded-full bg-slate-800 text-sky-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">4</span>
-              <span>Tap <strong class="text-sky-400 font-semibold">"Add"</strong> in the top-right corner to finish.</span>
-            </li>
-          </ol>
-        </div>
-      </div>
-
-      <!-- Tab Content: Mac (macOS Chrome & Safari) -->
-      <div id="tab-mac" class="installTabContent mt-4 space-y-3 hidden">
-        <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 space-y-3">
-          <div>
-            <div class="text-xs font-semibold text-sky-400 flex items-center gap-2 mb-1.5">
-              <i class="fa-brands fa-chrome"></i> Method 1: In Chrome on macOS
-            </div>
-            <ol class="text-xs text-slate-300 space-y-1.5 list-decimal list-inside leading-relaxed">
-              <li>Click the <strong class="text-white font-semibold">Install icon</strong> <i class="fa-solid fa-circle-down mx-1 text-sky-400"></i> on the right of the URL bar.</li>
-              <li>Or click menu <strong class="text-white font-semibold"><i class="fa-solid fa-ellipsis-vertical mx-1"></i></strong> &rarr; <strong class="text-white">Save and Share</strong> &rarr; <strong class="text-sky-400">Install Twit AI</strong>.</li>
-            </ol>
-          </div>
-          <div class="border-t border-slate-800/70 pt-2.5">
-            <div class="text-xs font-semibold text-indigo-400 flex items-center gap-2 mb-1.5">
-              <i class="fa-brands fa-safari"></i> Method 2: In Safari (macOS Sonoma+)
-            </div>
-            <ol class="text-xs text-slate-300 space-y-1.5 list-decimal list-inside leading-relaxed">
-              <li>Click <strong class="text-white font-semibold">File</strong> in the top Apple menu bar.</li>
-              <li>Choose <strong class="text-sky-400 font-semibold">"Add to Dock..."</strong> and click <strong class="text-white">Add</strong>.</li>
-              <li>Twit AI will now sit in your macOS Dock like a native Mac app!</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-5 flex justify-end">
-        <button class="modalClose px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition" data-modal="installModal">
-          Close
         </button>
       </div>
     </div>
@@ -743,7 +350,7 @@
 
   <!-- Toast -->
   <div id="toast"
-    class="fixed left-1/2 bottom-5 -translate-x-1/2 translate-y-20 opacity-0 pointer-events-none z-[200] px-5 py-3 rounded-full btn-gradient text-white font-semibold text-xs shadow-2xl transition-all duration-300 safe-bottom-nav">
+    class="fixed left-1/2 bottom-5 -translate-x-1/2 translate-y-20 opacity-0 pointer-events-none z-[200] px-4 py-2.5 rounded-full bg-sky-500 text-white font-semibold text-xs shadow-2xl transition-all">
   </div>
 
   <script type="module">
@@ -752,44 +359,30 @@
       getAuth,
       GoogleAuthProvider,
       signInWithPopup,
-      signInWithRedirect,
-      getRedirectResult,
-      setPersistence,
-      browserLocalPersistence,
       onAuthStateChanged,
       signOut
     } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
+    /*
+      IMPORTANT:
+      Replace the values below with the Firebase Web App config
+      from Firebase Console -> Project settings -> Your apps.
+
+      This config is public client configuration.
+      NEVER put the Firebase Admin private key or OPENAI_API_KEY here.
+    */
     const firebaseConfig = {
-      apiKey: "AIzaSyAgPi6rbLwIRNWHzNB1u_P82rBEVEmKTlY",
-      authDomain: "twit-ai.firebaseapp.com",
-      projectId: "twit-ai",
-      storageBucket: "twit-ai.firebasestorage.app",
-      messagingSenderId: "444927859336",
-      appId: "1:444927859336:web:c51fd0a476d9b32bc79d3d"
-    };
+  apiKey: "AIzaSyAgPi6rbLwIRNWHzNB1u_P82rBEVEmKTlY",
+  authDomain: "twit-ai.firebaseapp.com",
+  projectId: "twit-ai",
+  storageBucket: "twit-ai.firebasestorage.app",
+  messagingSenderId: "444927859336",
+  appId: "1:444927859336:web:c51fd0a476d9b32bc79d3d"
+};
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const googleProvider = new GoogleAuthProvider();
-
-    // Persist auth across sessions
-    setPersistence(auth, browserLocalPersistence).catch(() => {});
-
-    // Handle redirect result (for mobile sign-in)
-    getRedirectResult(auth).then(result => {
-      if (result && result.user) {
-        closeModal("loginModal");
-        showToast("Signed in successfully");
-      }
-    }).catch(e => {
-      console.error("Redirect result error:", e);
-      const errEl = $("loginError");
-      if (errEl) {
-        errEl.textContent = e.message || "Sign-in redirect failed.";
-        errEl.classList.remove("hidden");
-      }
-    });
 
     const state = {
       chats: [],
@@ -805,28 +398,11 @@
       user: null,
       profile: null,
       plans: {},
-      paymentConfig: null,
-      selectedPlan: null,
-      isGenerating: false,
-      deferredPrompt: null
+      paymentConfig: null
     };
 
     const $ = id => document.getElementById(id);
 
-    // Minimal service worker registration to enable native Chrome install prompt (PC & Android)
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        try {
-          const swCode = `self.addEventListener('fetch', function(e) {});`;
-          const blob = new Blob([swCode], { type: 'text/javascript' });
-          navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
-        } catch (e) {
-          // Silent fallback
-        }
-      });
-    }
-
-    // ---- Local state ----
     function loadLocalState() {
       try {
         const saved = localStorage.getItem("twitAiState");
@@ -852,7 +428,6 @@
       }));
     }
 
-    // ---- Chat management ----
     function createNewChat(render = true) {
       const chat = {
         id: Date.now().toString(),
@@ -895,7 +470,7 @@
       el.innerHTML = "";
       for (const chat of state.chats) {
         const btn = document.createElement("button");
-        btn.className = `w-full text-left flex items-center gap-2 px-3 py-3 rounded-xl border transition active:scale-[0.98] ${
+        btn.className = `w-full text-left flex items-center gap-2 px-3 py-2.5 rounded-xl border transition ${
           chat.id === state.currentChatId
             ? "bg-sky-500/10 border-sky-400/40 text-sky-300"
             : "border-transparent text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
@@ -905,7 +480,7 @@
         title.className = "flex-1 min-w-0 truncate text-xs";
         title.textContent = chat.title || "New Tweet Reply";
         const del = document.createElement("span");
-        del.className = "w-6 h-6 rounded-lg hover:bg-slate-700 flex items-center justify-center text-slate-600 hover:text-rose-400 flex-shrink-0 transition";
+        del.className = "w-6 h-6 rounded-lg hover:bg-slate-700 flex items-center justify-center text-slate-600 hover:text-rose-400 flex-shrink-0";
         del.innerHTML = '<i class="fa-solid fa-trash text-[9px]"></i>';
         del.onclick = e => deleteChat(chat.id, e);
         btn.append(title, del);
@@ -921,14 +496,11 @@
         const empty = document.createElement("div");
         empty.className = "min-h-full flex items-center justify-center text-center px-4";
         empty.innerHTML = `
-          <div class="max-w-md slide-in">
-            <div class="relative w-20 h-20 mx-auto">
-              <div class="absolute inset-0 rounded-3xl bg-gradient-to-br from-sky-500/30 to-indigo-500/30 blur-xl opacity-70 animate-pulse"></div>
-              <div class="relative w-full h-full rounded-3xl bg-gradient-to-br from-sky-500/20 to-indigo-500/20 border border-sky-400/20 flex items-center justify-center">
-                <i class="fa-solid fa-wand-magic-sparkles text-sky-400 text-2xl"></i>
-              </div>
+          <div class="max-w-md">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-sky-500/20 to-indigo-500/20 border border-sky-400/20 flex items-center justify-center">
+              <i class="fa-solid fa-wand-magic-sparkles text-sky-400 text-xl"></i>
             </div>
-            <h2 class="text-xl font-bold gradient-text mt-5">Generate natural X replies</h2>
+            <h2 class="text-xl font-bold text-white mt-5">Generate natural X replies</h2>
             <p class="text-sm text-slate-500 mt-2">Paste a tweet below and Twit AI will generate replies using your selected rules.</p>
           </div>`;
         container.appendChild(empty);
@@ -937,7 +509,7 @@
 
       for (const message of chat.messages) {
         const wrap = document.createElement("div");
-        wrap.className = message.role === "user" ? "flex justify-end slide-in" : "flex justify-start slide-in";
+        wrap.className = message.role === "user" ? "flex justify-end" : "flex justify-start";
         const bubble = document.createElement("div");
         bubble.className = message.role === "user"
           ? "max-w-[92%] sm:max-w-[80%] rounded-2xl rounded-br-md bg-sky-500/10 border border-sky-400/20 px-3.5 py-3 text-sm text-slate-200 whitespace-pre-wrap break-words"
@@ -947,24 +519,24 @@
           bubble.textContent = message.content;
         } else if (message.loading) {
           bubble.innerHTML = `
-            <div class="glass rounded-2xl px-5 py-5 flex items-center gap-3">
-              <span class="w-2.5 h-2.5 rounded-full bg-sky-400 dot-bounce"></span>
-              <span class="w-2.5 h-2.5 rounded-full bg-sky-400 dot-bounce" style="animation-delay:0.16s"></span>
-              <span class="w-2.5 h-2.5 rounded-full bg-sky-400 dot-bounce" style="animation-delay:0.32s"></span>
-              <span class="text-xs text-slate-400 ml-1">Generating replies...</span>
+            <div class="glass rounded-2xl px-4 py-4 flex items-center gap-3">
+              <span class="w-2 h-2 rounded-full bg-sky-400 animate-bounce"></span>
+              <span class="w-2 h-2 rounded-full bg-sky-400 animate-bounce [animation-delay:120ms]"></span>
+              <span class="w-2 h-2 rounded-full bg-sky-400 animate-bounce [animation-delay:240ms]"></span>
+              <span class="text-xs text-slate-500 ml-1">Generating replies...</span>
             </div>`;
         } else {
           const replies = Array.isArray(message.content) ? message.content : [message.content];
           bubble.innerHTML = `
             <div class="space-y-2.5">
               ${replies.map((reply, i) => `
-                <div class="glass rounded-2xl p-3.5 sm:p-4 hover:border-sky-400/30 transition">
+                <div class="glass rounded-2xl p-3.5 sm:p-4">
                   <div class="flex items-start gap-3">
-                    <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-500/20 to-indigo-500/20 border border-sky-400/20 flex items-center justify-center text-[10px] font-bold text-sky-400 flex-shrink-0">${i + 1}</div>
+                    <div class="w-7 h-7 rounded-lg bg-sky-500/10 border border-sky-400/20 flex items-center justify-center text-[10px] font-bold text-sky-400 flex-shrink-0">${i + 1}</div>
                     <div class="flex-1 min-w-0">
                       <div class="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(reply)}</div>
                     </div>
-                    <button class="copyReply w-9 h-9 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition" data-reply="${encodeURIComponent(reply)}">
+                    <button class="copyReply w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center flex-shrink-0" data-reply="${encodeURIComponent(reply)}">
                       <i class="fa-regular fa-copy text-[11px]"></i>
                     </button>
                   </div>
@@ -979,18 +551,8 @@
       container.querySelectorAll(".copyReply").forEach(btn => {
         btn.addEventListener("click", async () => {
           const text = decodeURIComponent(btn.dataset.reply);
-          try {
-            await navigator.clipboard.writeText(text);
-            showToast("Copied reply");
-          } catch {
-            const ta = document.createElement("textarea");
-            ta.value = text;
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand("copy");
-            document.body.removeChild(ta);
-            showToast("Copied reply");
-          }
+          await navigator.clipboard.writeText(text);
+          showToast("Copied reply");
         });
       });
 
@@ -999,13 +561,12 @@
       });
     }
 
-    // ---- Utils ----
     function countWords(text) {
-      return text ? (text.trim().match(/\S+/g) || []).length : 0;
+      return text ? (text.trim().match(/\\S+/g) || []).length : 0;
     }
 
     function sanitizeTweetInput(text) {
-      return text.replace(/https?:\/\/\S+/gi, "").trim();
+      return text.replace(/https?:\\/\\/\\S+/gi, "").trim();
     }
 
     function updateCounters(text) {
@@ -1020,14 +581,14 @@
 
     function parseReplies(raw) {
       const replies = [];
-      const regex = /```(?:[a-zA-Z]+)?\s*([\s\S]*?)```/g;
+      const regex = /```(?:[a-zA-Z]+)?\\s*([\\s\\S]*?)```/g;
       let match;
       while ((match = regex.exec(raw)) !== null) {
         const t = match[1].trim();
         if (t) replies.push(t);
       }
       if (replies.length) return replies;
-      return raw.split("\n").map(x => x.trim()).filter(Boolean).slice(0, state.settings.replyCount);
+      return raw.split("\\n").map(x => x.trim()).filter(Boolean).slice(0, state.settings.replyCount);
     }
 
     function syncSettingsUI() {
@@ -1039,17 +600,14 @@
       $("languageSelect").value = state.settings.language;
     }
 
-    // ---- Modals ----
     function openModal(id) {
-      const m = $(id);
-      m.classList.remove("hidden");
-      m.classList.add("flex");
+      $(id).classList.remove("hidden");
+      $(id).classList.add("flex");
     }
 
     function closeModal(id) {
-      const m = $(id);
-      m.classList.add("hidden");
-      m.classList.remove("flex");
+      $(id).classList.add("hidden");
+      $(id).classList.remove("flex");
     }
 
     function closeSidebar() {
@@ -1062,97 +620,12 @@
       t.textContent = message;
       t.classList.remove("translate-y-20", "opacity-0");
       clearTimeout(t._timer);
-      t._timer = setTimeout(() => t.classList.add("translate-y-20", "opacity-0"), 2500);
+      t._timer = setTimeout(() => t.classList.add("translate-y-20", "opacity-0"), 2200);
     }
 
-    // ---- Chrome App Installation & Platform Guidance Functionality ----
-    function detectPlatform() {
-      const ua = navigator.userAgent || "";
-      const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      const isAndroid = /Android/i.test(ua);
-      const isMac = /Macintosh|Mac OS X/i.test(ua) && !isIOS;
-      const isPC = /Windows|Linux|CrOS/i.test(ua) && !isAndroid;
-
-      if (isIOS) return "ios";
-      if (isAndroid) return "android";
-      if (isMac) return "mac";
-      if (isPC) return "pc";
-      return "android";
-    }
-
-    function setInstallTab(tabId) {
-      document.querySelectorAll(".installTabBtn").forEach(btn => {
-        if (btn.dataset.tab === tabId) {
-          btn.classList.add("bg-sky-500", "text-white");
-          btn.classList.remove("text-slate-400", "hover:text-slate-200");
-        } else {
-          btn.classList.remove("bg-sky-500", "text-white");
-          btn.classList.add("text-slate-400", "hover:text-slate-200");
-        }
-      });
-
-      document.querySelectorAll(".installTabContent").forEach(content => {
-        if (content.id === `tab-${tabId}`) {
-          content.classList.remove("hidden");
-        } else {
-          content.classList.add("hidden");
-        }
-      });
-    }
-
-    // Capture Chrome beforeinstallprompt for PC & Android
-    window.addEventListener("beforeinstallprompt", e => {
-      e.preventDefault();
-      state.deferredPrompt = e;
-      const nativeCard = $("nativeInstallPromptCard");
-      if (nativeCard) nativeCard.classList.remove("hidden");
-      const badge = $("sidebarInstallBadge");
-      if (badge) {
-        badge.textContent = "1-Click Ready";
-        badge.className = "text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold animate-pulse";
-      }
-    });
-
-    window.addEventListener("appinstalled", () => {
-      state.deferredPrompt = null;
-      const nativeCard = $("nativeInstallPromptCard");
-      if (nativeCard) nativeCard.classList.add("hidden");
-      closeModal("installModal");
-      showToast("Twit AI App installed successfully!");
-    });
-
-    async function triggerDirectInstall() {
-      if (state.deferredPrompt) {
-        state.deferredPrompt.prompt();
-        const { outcome } = await state.deferredPrompt.userChoice;
-        if (outcome === "accepted") {
-          showToast("Installing Twit AI...");
-        }
-        state.deferredPrompt = null;
-        $("nativeInstallPromptCard").classList.add("hidden");
-      } else {
-        showToast("Use the step-by-step instructions below");
-      }
-    }
-
-    function openInstallModal() {
-      const platform = detectPlatform();
-      const badge = $("detectedBadge");
-      const names = { ios: "iOS Device", android: "Android", mac: "macOS", pc: "PC Chrome" };
-      if (badge) badge.textContent = names[platform] || "Auto-Detected";
-
-      if (state.deferredPrompt) {
-        $("nativeInstallPromptCard").classList.remove("hidden");
-      }
-
-      setInstallTab(platform);
-      openModal("installModal");
-    }
-
-    // ---- API ----
     async function getIdToken() {
       if (!state.user) throw new Error("Please sign in first.");
-      return await state.user.getIdToken(true);
+      return await state.user.getIdToken();
     }
 
     async function apiFetch(url, options = {}) {
@@ -1176,18 +649,7 @@
         state.profile = data.profile || data.user || data;
         updateAccountUI();
       } catch (e) {
-        console.warn("Account refresh fallback:", e);
-        if (!state.profile) {
-          state.profile = {
-            displayName: state.user.displayName,
-            email: state.user.email,
-            photoURL: state.user.photoURL,
-            freeTweetsUsed: 0,
-            plan: "Free",
-            subscriptionStatus: "none"
-          };
-        }
-        updateAccountUI();
+        console.error("Account refresh:", e);
       }
     }
 
@@ -1249,7 +711,7 @@
 
         const entries = Object.entries(state.plans);
         $("planGrid").innerHTML = entries.map(([key, plan], i) => `
-          <button class="planBtn text-left rounded-xl border ${i === 0 ? "border-sky-400 bg-sky-500/10" : "border-slate-800 bg-slate-900/60"} p-3 hover:border-sky-400/50 transition active:scale-[0.97]" data-plan="${escapeHtml(key)}">
+          <button class="planBtn text-left rounded-xl border ${i === 0 ? "border-sky-400 bg-sky-500/10" : "border-slate-800 bg-slate-900/60"} p-3 hover:border-sky-400/50 transition" data-plan="${escapeHtml(key)}">
             <div class="text-xs font-semibold text-white">${escapeHtml(plan.label || key)}</div>
             <div class="text-sm font-bold text-sky-400 mt-1">${escapeHtml(String(plan.amount ?? ""))}</div>
           </button>`).join("");
@@ -1261,62 +723,21 @@
             state.selectedPlan = btn.dataset.plan;
           });
         });
-
         state.selectedPlan = entries[0]?.[0] || null;
       } catch (e) {
         console.error("Payment config:", e);
       }
     }
 
-    // ---- Auth ----
-    function isMobileDevice() {
-      return /iPhone|iPad|iPod|Android|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent) ||
-             (navigator.maxTouchPoints > 1 && window.innerWidth < 768);
-    }
-
     async function loginGoogle() {
       $("loginError").classList.add("hidden");
-      const btn = $("googleLoginBtn");
-      const icon = $("googleLoginIcon");
-      const text = $("googleLoginText");
-
-      btn.disabled = true;
-      icon.className = "fa-solid fa-circle-notch spin";
-      text.textContent = "Signing in...";
-
       try {
-        if (isMobileDevice()) {
-          await signInWithRedirect(auth, googleProvider);
-        } else {
-          try {
-            await signInWithPopup(auth, googleProvider);
-            closeModal("loginModal");
-            showToast("Signed in successfully");
-          } catch (popupErr) {
-            if (popupErr.code === 'auth/popup-blocked' ||
-                popupErr.code === 'auth/cancelled-popup-request' ||
-                popupErr.code === 'auth/popup-closed-by-user' ||
-                popupErr.code === 'auth/unauthorized-domain') {
-              await signInWithRedirect(auth, googleProvider);
-            } else {
-              throw popupErr;
-            }
-          }
-        }
+        await signInWithPopup(auth, googleProvider);
+        closeModal("loginModal");
       } catch (e) {
-        console.error("Login error:", e);
-        let msg = e.message || "Google sign-in failed.";
-        if (e.code === 'auth/unauthorized-domain') {
-          msg = "This domain is not authorized. Please contact support.";
-        } else if (e.code === 'auth/operation-not-supported-in-this-environment') {
-          msg = "Sign-in not supported in this environment. Try a different browser.";
-        }
-        $("loginError").textContent = msg;
+        console.error(e);
+        $("loginError").textContent = e.message || "Google sign-in failed.";
         $("loginError").classList.remove("hidden");
-      } finally {
-        btn.disabled = false;
-        icon.className = "fa-brands fa-google";
-        text.textContent = "Continue with Google";
       }
     }
 
@@ -1341,9 +762,7 @@
       }
     }
 
-    // ---- Send message ----
     async function sendMessage() {
-      if (state.isGenerating) return;
       const input = $("chatInput");
       const cleanTweet = sanitizeTweetInput(input.value);
 
@@ -1359,6 +778,7 @@
       const chat = state.chats.find(c => c.id === state.currentChatId);
       if (!chat) return;
 
+      const oldText = input.value;
       input.value = "";
       input.style.height = "auto";
       updateCounters("");
@@ -1373,7 +793,6 @@
       renderMessages();
 
       $("sendBtn").disabled = true;
-      state.isGenerating = true;
 
       try {
         const data = await apiFetch("/api/generate", {
@@ -1409,11 +828,9 @@
         showToast(e.message);
       } finally {
         $("sendBtn").disabled = false;
-        state.isGenerating = false;
       }
     }
 
-    // ---- Payment ----
     async function submitPayment() {
       if (!state.user) {
         openModal("loginModal");
@@ -1447,26 +864,14 @@
         $("txHashInput").value = "";
         await refreshAccount();
       } catch (e) {
-        $("paymentMessage").innerHTML = `Notice: ${escapeHtml(e.message || "Could not submit directly")}.<br>You can also email your tx hash to <a href="mailto:admin@twitai.app" class="underline text-sky-400 font-semibold">admin@twitai.app</a> for instant manual activation.`;
-        $("paymentMessage").className = "text-xs mt-3 text-amber-300";
+        $("paymentMessage").textContent = e.message;
+        $("paymentMessage").className = "text-xs mt-3 text-rose-400";
       } finally {
         btn.disabled = false;
       }
     }
 
-    // ---- Event listeners ----
-    $("headerInstallBtn").addEventListener("click", openInstallModal);
-    $("sidebarInstallBtn").addEventListener("click", () => {
-      closeSidebar();
-      openInstallModal();
-    });
-    $("directInstallBtn").addEventListener("click", triggerDirectInstall);
-
-    // Install tab switching
-    document.querySelectorAll(".installTabBtn").forEach(btn => {
-      btn.addEventListener("click", () => setInstallTab(btn.dataset.tab));
-    });
-
+    // Events
     $("loginBtn").addEventListener("click", () => openModal("loginModal"));
     $("googleLoginBtn").addEventListener("click", loginGoogle);
     $("logoutBtn").addEventListener("click", logout);
@@ -1503,7 +908,6 @@
         $("chatInput").focus();
       } catch {
         showToast("Clipboard access denied. Paste manually.");
-        $("chatInput").focus();
       }
     });
 
@@ -1532,16 +936,7 @@
     $("copyWalletBtn").addEventListener("click", async () => {
       const wallet = $("paymentWallet").value;
       if (!wallet) return;
-      try {
-        await navigator.clipboard.writeText(wallet);
-      } catch {
-        const ta = document.createElement("textarea");
-        ta.value = wallet;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-      }
+      await navigator.clipboard.writeText(wallet);
       showToast("Wallet copied");
     });
 
@@ -1555,27 +950,14 @@
       });
     });
 
-    // Close sidebar on escape
-    document.addEventListener("keydown", e => {
-      if (e.key === "Escape") {
-        closeSidebar();
-        document.querySelectorAll("[id$='Modal']").forEach(m => {
-          if (!m.classList.contains("hidden")) closeModal(m.id);
-        });
-      }
-    });
-
-    // ---- Auth state ----
     onAuthStateChanged(auth, async user => {
       state.user = user;
       updateAuthUI();
       if (user) {
-        closeModal("loginModal");
         await refreshAccount();
       }
     });
 
-    // ---- Init ----
     loadLocalState();
     loadPaymentConfig();
   </script>
