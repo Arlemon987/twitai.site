@@ -501,15 +501,22 @@
       <h2 class="text-lg font-bold text-white">Subscribe to Twit AI</h2>
       <p class="text-xs text-slate-400 mt-1">Send the exact amount to the wallet below, then submit your transaction hash.</p>
 
+      <!-- Plans Grid -->
       <div id="planGrid" class="grid grid-cols-2 gap-2 mt-5"></div>
 
       <div class="mt-4 rounded-xl bg-slate-950/80 border border-slate-800 p-4">
-        <div class="text-[10px] text-slate-500 uppercase mb-1">Network</div>
-        <div id="paymentNetwork" class="text-sm text-white font-semibold">Loading...</div>
+        <div class="flex items-center justify-between mb-1">
+          <div class="text-[10px] text-slate-500 uppercase">Network</div>
+          <button id="retryConfigBtn" class="text-[10px] text-sky-400 hover:underline hidden items-center gap-1">
+            <i class="fa-solid fa-rotate-right"></i> Refresh
+          </button>
+        </div>
+        <div id="paymentNetwork" class="text-sm text-white font-semibold">USDT (TRC20 / Arbitrum / ERC20)</div>
+
         <div class="text-[10px] text-slate-500 uppercase mt-4 mb-1">Payment wallet</div>
         <div class="flex gap-2">
-          <input id="paymentWallet" readonly class="flex-1 min-w-0 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300">
-          <button id="copyWalletBtn" class="px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs active:scale-90 transition">Copy</button>
+          <input id="paymentWallet" readonly class="flex-1 min-w-0 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 font-mono">
+          <button id="copyWalletBtn" class="px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs active:scale-90 transition font-medium">Copy</button>
         </div>
       </div>
 
@@ -523,6 +530,11 @@
       </button>
 
       <p id="paymentMessage" class="text-xs mt-3 hidden"></p>
+
+      <div class="mt-4 p-3 rounded-xl bg-slate-900/50 border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+        <span>Need assistance with payment?</span>
+        <a href="mailto:admin@twitai.app" class="text-sky-400 hover:underline font-medium">admin@twitai.app</a>
+      </div>
     </div>
   </div>
 
@@ -797,6 +809,18 @@
       selectedPlan: null,
       isGenerating: false,
       deferredPrompt: null
+    };
+
+    // Default fallback payment configuration in case /api/config is not yet deployed or unreachable
+    const DEFAULT_PAYMENT_CONFIG = {
+      network: "USDT (TRC20 / Arbitrum / ERC20)",
+      wallet: "0x39F22d3e9134E983e25b16D087c53782e4e1f748",
+      plans: {
+        monthly: { label: "1 Month Pro", amount: "15 USDT / $15" },
+        quarterly: { label: "3 Months Pro", amount: "35 USDT / $35" },
+        biannual: { label: "6 Months Pro", amount: "65 USDT / $65" },
+        lifetime: { label: "Lifetime VIP", amount: "150 USDT / $150" }
+      }
     };
 
     const $ = id => document.getElementById(id);
@@ -1164,7 +1188,18 @@
         state.profile = data.profile || data.user || data;
         updateAccountUI();
       } catch (e) {
-        console.error("Account refresh:", e);
+        console.warn("Account refresh fallback:", e);
+        if (!state.profile) {
+          state.profile = {
+            displayName: state.user.displayName,
+            email: state.user.email,
+            photoURL: state.user.photoURL,
+            freeTweetsUsed: 0,
+            plan: "Free",
+            subscriptionStatus: "none"
+          };
+        }
+        updateAccountUI();
       }
     }
 
@@ -1215,32 +1250,62 @@
         : `${Math.max(0, 100 - used)} free tweets left`;
     }
 
-    async function loadPaymentConfig() {
-      try {
-        const res = await fetch("/api/config");
-        const data = await res.json();
-        state.paymentConfig = data;
-        state.plans = data.plans || {};
-        $("paymentNetwork").textContent = data.network || "Not configured";
-        $("paymentWallet").value = data.wallet || "";
+    function renderPaymentUI(config) {
+      if (!config) return;
+      const network = config.network || DEFAULT_PAYMENT_CONFIG.network;
+      const wallet = config.wallet || DEFAULT_PAYMENT_CONFIG.wallet;
+      const plans = config.plans && Object.keys(config.plans).length ? config.plans : DEFAULT_PAYMENT_CONFIG.plans;
 
-        const entries = Object.entries(state.plans);
-        $("planGrid").innerHTML = entries.map(([key, plan], i) => `
-          <button class="planBtn text-left rounded-xl border ${i === 0 ? "border-sky-400 bg-sky-500/10" : "border-slate-800 bg-slate-900/60"} p-3 hover:border-sky-400/50 transition active:scale-[0.97]" data-plan="${escapeHtml(key)}">
+      state.plans = plans;
+      $("paymentNetwork").textContent = network;
+      $("paymentWallet").value = wallet;
+
+      const entries = Object.entries(plans);
+      if (!entries.length) return;
+
+      if (!state.selectedPlan || !plans[state.selectedPlan]) {
+        state.selectedPlan = entries[0][0];
+      }
+
+      $("planGrid").innerHTML = entries.map(([key, plan]) => {
+        const isSelected = key === state.selectedPlan;
+        return `
+          <button type="button" class="planBtn text-left rounded-xl border ${isSelected ? "border-sky-400 bg-sky-500/15 ring-1 ring-sky-400/40" : "border-slate-800 bg-slate-900/60"} p-3 hover:border-sky-400/50 transition active:scale-[0.97]" data-plan="${escapeHtml(key)}">
             <div class="text-xs font-semibold text-white">${escapeHtml(plan.label || key)}</div>
             <div class="text-sm font-bold text-sky-400 mt-1">${escapeHtml(String(plan.amount ?? ""))}</div>
-          </button>`).join("");
+          </button>`;
+      }).join("");
 
-        document.querySelectorAll(".planBtn").forEach(btn => {
-          btn.addEventListener("click", () => {
-            document.querySelectorAll(".planBtn").forEach(x => x.classList.remove("border-sky-400", "bg-sky-500/10"));
-            btn.classList.add("border-sky-400", "bg-sky-500/10");
-            state.selectedPlan = btn.dataset.plan;
+      document.querySelectorAll(".planBtn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".planBtn").forEach(x => {
+            x.classList.remove("border-sky-400", "bg-sky-500/15", "ring-1", "ring-sky-400/40");
+            x.classList.add("border-slate-800", "bg-slate-900/60");
           });
+          btn.classList.add("border-sky-400", "bg-sky-500/15", "ring-1", "ring-sky-400/40");
+          btn.classList.remove("border-slate-800", "bg-slate-900/60");
+          state.selectedPlan = btn.dataset.plan;
         });
-        state.selectedPlan = entries[0]?.[0] || null;
+      });
+    }
+
+    async function loadPaymentConfig() {
+      // First render default config immediately so the modal is never empty or stuck on "Loading..."
+      renderPaymentUI(DEFAULT_PAYMENT_CONFIG);
+
+      try {
+        const res = await fetch("/api/config");
+        if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+        const data = await res.json();
+        if (data && (data.plans || data.wallet || data.network)) {
+          state.paymentConfig = data;
+          renderPaymentUI(data);
+        }
+        $("retryConfigBtn")?.classList.add("hidden");
       } catch (e) {
-        console.error("Payment config:", e);
+        console.warn("Using default payment configuration (/api/config unavailable):", e);
+        $("retryConfigBtn")?.classList.remove("hidden");
+        $("retryConfigBtn")?.classList.add("flex");
       }
     }
 
@@ -1423,8 +1488,8 @@
         $("txHashInput").value = "";
         await refreshAccount();
       } catch (e) {
-        $("paymentMessage").textContent = e.message;
-        $("paymentMessage").className = "text-xs mt-3 text-rose-400";
+        $("paymentMessage").innerHTML = `Notice: ${escapeHtml(e.message || "Could not submit directly")}.<br>You can also email your tx hash to <a href="mailto:admin@twitai.app" class="underline text-sky-400 font-semibold">admin@twitai.app</a> for instant manual activation.`;
+        $("paymentMessage").className = "text-xs mt-3 text-amber-300";
       } finally {
         btn.disabled = false;
       }
@@ -1437,6 +1502,7 @@
       openInstallModal();
     });
     $("directInstallBtn").addEventListener("click", triggerDirectInstall);
+    $("retryConfigBtn")?.addEventListener("click", loadPaymentConfig);
 
     // Install tab switching
     document.querySelectorAll(".installTabBtn").forEach(btn => {
