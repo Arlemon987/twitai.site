@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Twit AI — Generating Tweet Reply</title>
-  <meta name="theme-color" content="#0a0a0f">
+  <meta name="theme-color" content="#070a12">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,7 +13,7 @@
   <style>
     body { 
       font-family: 'Plus Jakarta Sans', sans-serif; 
-      background-color: #0b0f17; 
+      background-color: #070a12; 
       color: #f1f5f9; 
     }
     .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -21,35 +21,32 @@
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 999px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
     
-    /* Background Gradients & Ambient Glow */
     .bg-mesh {
       background-image: 
-        radial-gradient(at 10% 10%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
-        radial-gradient(at 90% 20%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-        radial-gradient(at 50% 90%, rgba(14, 165, 233, 0.06) 0px, transparent 50%);
+        radial-gradient(at 15% 15%, rgba(14, 165, 233, 0.12) 0px, transparent 55%),
+        radial-gradient(at 85% 15%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+        radial-gradient(at 50% 85%, rgba(6, 182, 212, 0.08) 0px, transparent 60%);
     }
 
-    /* Glass Panels */
-    .glass-card {
-      background: rgba(18, 24, 38, 0.7);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, 0.07);
+    .glass-panel {
+      background: rgba(13, 20, 36, 0.72);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
     
     .glass-card-interactive {
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .glass-card-interactive:hover {
-      background: rgba(26, 34, 52, 0.85);
-      border-color: rgba(56, 189, 248, 0.3);
+      background: rgba(21, 32, 54, 0.85);
+      border-color: rgba(56, 189, 248, 0.35);
       transform: translateY(-2px);
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px -3px rgba(56, 189, 248, 0.15);
+      box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.5), 0 0 20px -2px rgba(56, 189, 248, 0.15);
     }
 
-    /* Glow Elements */
     .glow-brand {
-      box-shadow: 0 0 25px -4px rgba(56, 189, 248, 0.4);
+      box-shadow: 0 0 30px -3px rgba(56, 189, 248, 0.45);
     }
   </style>
 </head>
@@ -57,53 +54,79 @@
 <body class="h-screen flex overflow-hidden bg-mesh">
 
   <!-- Sidebar -->
-  <aside id="sidebar" class="w-72 bg-[#0d131f]/90 backdrop-blur-xl flex flex-col absolute md:relative inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out z-50 border-r border-slate-800/80 shadow-2xl md:shadow-none">
+  <aside id="sidebar" class="w-72 bg-[#090d16]/95 backdrop-blur-2xl flex flex-col absolute md:relative inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out z-50 border-r border-slate-800/80 shadow-2xl md:shadow-none">
     
-    <!-- Sidebar Header: Brand & Tagline -->
+    <!-- Sidebar Header: Brand Logo & Title -->
     <div class="p-5 border-b border-slate-800/70">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-cyan-400 p-[1.5px] glow-brand">
-          <div class="w-full h-full bg-[#0d131f] rounded-[10px] flex items-center justify-center">
-            <i class="fa-solid fa-bolt-lightning text-sky-400 text-base"></i>
+        
+        <!-- Twit AI Vector Graphic Logo -->
+        <div class="relative w-11 h-11 flex-shrink-0">
+          <div class="absolute inset-0 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-cyan-400 blur-[3px] opacity-75 animate-pulse"></div>
+          <div class="relative w-full h-full rounded-2xl bg-[#090d16] border border-sky-400/40 flex items-center justify-center overflow-hidden">
+            <svg class="w-7 h-7" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 28L14 24H30C32.2091 24 34 22.2091 34 20V12C34 9.79086 32.2091 8 30 8H10C7.79086 8 6 9.79086 6 12V26C6 27.1046 6.89543 28 8 28Z" stroke="url(#logo_grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M14 16L18 20M18 16L14 20" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="25" cy="18" r="2.5" fill="#818cf8"/>
+              <defs>
+                <linearGradient id="logo_grad" x1="6" y1="8" x2="34" y2="28" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#38BDF8"/>
+                  <stop offset="1" stop-color="#818CF8"/>
+                </linearGradient>
+              </defs>
+            </svg>
           </div>
         </div>
+
         <div>
-          <h1 class="text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-sky-300 bg-clip-text text-transparent">Twit AI</h1>
-          <p class="text-[10px] text-sky-400/90 font-medium tracking-wide">Generating Tweet Reply</p>
+          <div class="flex items-center gap-1.5">
+            <h1 class="text-lg font-black tracking-tight bg-gradient-to-r from-white via-slate-100 to-sky-300 bg-clip-text text-transparent">Twit AI</h1>
+            <span class="px-1.5 py-0.2 rounded bg-sky-500/10 border border-sky-400/30 text-[9px] font-mono text-sky-400">PRO</span>
+          </div>
+          <p class="text-[10px] text-sky-400/90 font-medium">Generating Tweet Reply</p>
         </div>
       </div>
 
-      <button id="newChatBtn" class="mt-5 w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-medium text-xs shadow-lg shadow-sky-500/20 transition duration-200 group">
-        <i class="fa-solid fa-plus text-xs group-hover:rotate-90 transition-transform duration-200"></i> 
-        <span>New Generation</span>
-      </button>
+      <!-- Action Buttons -->
+      <div class="mt-5 space-y-2">
+        <button id="newChatBtn" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 via-sky-600 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-sky-500/20 transition group">
+          <i class="fa-solid fa-feather-pointed text-xs group-hover:scale-110 transition-transform"></i> 
+          <span>New Tweet Reply</span>
+        </button>
+
+        <!-- Chrome App Download Button -->
+        <button onclick="openChromeModal()" class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/70 text-slate-200 text-xs font-medium transition">
+          <i class="fa-brands fa-chrome text-amber-400 text-sm"></i>
+          <span>Get Chrome Extension</span>
+        </button>
+      </div>
     </div>
 
     <!-- Conversations List -->
-    <div class="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 flex items-center justify-between">
-      <span>History</span>
-      <i class="fa-regular fa-clock text-[10px]"></i>
+    <div class="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
+      <span>Saved Replies</span>
+      <i class="fa-solid fa-clock-rotate-left text-[10px]"></i>
     </div>
     <div id="chatList" class="flex-1 overflow-y-auto custom-scrollbar px-3 space-y-1">
       <!-- Chats injected here -->
     </div>
 
-    <!-- Sidebar Footer: Developer Credit & Settings -->
-    <div class="p-3 border-t border-slate-800/70 space-y-2 bg-[#090d15]/50">
+    <!-- Sidebar Footer -->
+    <div class="p-3 border-t border-slate-800/70 space-y-2 bg-[#060910]/70">
       <button id="configBtn" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-xs font-medium border border-transparent hover:border-slate-700/50">
         <span class="flex items-center gap-2.5">
           <i class="fa-solid fa-sliders text-sky-400"></i> Generation Rules
         </span>
-        <i class="fa-solid fa-chevron-right text-[10px] text-slate-500"></i>
+        <i class="fa-solid fa-gear text-slate-500 text-xs"></i>
       </button>
 
       <!-- Developed by link -->
-      <a href="https://x.com/lemonar777" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between px-3 py-2 rounded-xl bg-gradient-to-r from-slate-900 to-slate-800/80 border border-slate-700/50 hover:border-sky-500/40 text-slate-400 hover:text-white transition group">
-        <div class="flex items-center gap-2.5 text-[11px]">
-          <span class="w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white border border-slate-700">
+      <a href="https://x.com/lemonar777" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between px-3 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-sky-500/40 text-slate-300 hover:text-white transition group">
+        <div class="flex items-center gap-2 text-xs">
+          <span class="w-5 h-5 rounded-full bg-black flex items-center justify-center text-white border border-slate-700">
             <i class="fa-brands fa-x-twitter text-[10px]"></i>
           </span>
-          <span>Dev by <strong class="text-sky-400 font-semibold group-hover:underline">@lemonar777</strong></span>
+          <span>Developed by <strong class="text-sky-400 font-semibold group-hover:underline">@lemonar777</strong></span>
         </div>
         <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-500 group-hover:text-sky-400 transition-colors"></i>
       </a>
@@ -113,70 +136,121 @@
   <!-- Sidebar Overlay (Mobile) -->
   <div id="sidebarOverlay" class="absolute inset-0 bg-black/70 backdrop-blur-sm hidden md:hidden z-40"></div>
 
-  <!-- Main Chat Section -->
+  <!-- Main Workspace -->
   <main class="flex-1 flex flex-col bg-transparent relative overflow-hidden">
     
     <!-- Top Bar -->
-    <header class="h-14 border-b border-slate-800/60 bg-[#0d131f]/60 backdrop-blur-md flex items-center justify-between px-4 z-10">
+    <header class="h-14 border-b border-slate-800/60 bg-[#090d16]/70 backdrop-blur-md flex items-center justify-between px-4 z-10">
       <div class="flex items-center gap-3">
         <button id="toggleSidebar" class="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition md:hidden">
           <i class="fa-solid fa-bars text-base"></i>
         </button>
-        <div class="flex items-center gap-2">
-          <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="text-xs font-semibold text-slate-300">Twit AI Model v2.4</span>
+        <div class="flex items-center gap-2.5">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400 animate-pulse"></span>
+          <span class="text-xs font-semibold text-slate-200">Generating Tweet Reply (Raw Text Mode)</span>
         </div>
       </div>
-      <div class="flex items-center gap-3">
-        <a href="https://x.com/lemonar777" target="_blank" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-400 bg-slate-800/70 hover:text-white hover:bg-slate-700/80 border border-slate-700/60 transition">
-          <i class="fa-brands fa-x-twitter text-xs"></i> Follow @lemonar777
+      
+      <div class="flex items-center gap-2.5">
+        <!-- Download Extension Top Button -->
+        <button onclick="openChromeModal()" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-200 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 transition">
+          <i class="fa-brands fa-chrome text-sky-400"></i>
+          <span class="hidden sm:inline">Download Chrome App</span>
+        </button>
+        <a href="https://x.com/lemonar777" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-400 bg-slate-800/70 hover:text-white hover:bg-slate-700/80 border border-slate-700/60 transition">
+          <i class="fa-brands fa-x-twitter text-xs"></i> @lemonar777
         </a>
       </div>
     </header>
 
-    <!-- Chat Feed -->
+    <!-- Chat/Reply Stream -->
     <div id="chatContainer" class="flex-1 overflow-y-auto custom-scrollbar relative">
       <div id="messages" class="max-w-3xl mx-auto p-4 md:p-6 space-y-6">
-        <!-- Dynamic content goes here -->
+        <!-- Message feed -->
       </div>
     </div>
 
-    <!-- Input Bar -->
-    <div class="relative z-10 bg-gradient-to-t from-[#0a0f18] via-[#0a0f18]/90 to-transparent pt-3 pb-4">
+    <!-- Input Section: No Links Allowed, Pure Tweet Text -->
+    <div class="relative z-10 bg-gradient-to-t from-[#070a12] via-[#070a12]/95 to-transparent pt-3 pb-4">
       <div class="max-w-3xl mx-auto px-4">
-        <div class="relative glass-card rounded-2xl p-1.5 shadow-2xl border-slate-700/60 focus-within:border-sky-500/50 transition">
-          <textarea id="chatInput" rows="1" placeholder="Paste tweet or prompt to generate high-signal replies..." class="w-full bg-transparent px-4 py-3 pr-14 text-sm text-slate-100 placeholder-slate-500 resize-none outline-none custom-scrollbar max-h-40 font-normal leading-relaxed"></textarea>
+        <div class="relative glass-panel rounded-2xl p-2 shadow-2xl border-slate-700/70 focus-within:border-sky-500/60 transition">
           
-          <button id="sendBtn" class="absolute right-3 bottom-3 w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white shadow-md shadow-sky-500/30 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition">
-            <i class="fa-solid fa-paper-plane text-xs"></i>
-          </button>
+          <div class="flex items-center justify-between px-3 pt-1 pb-2 border-b border-slate-800/60 text-[11px] text-slate-400">
+            <span class="flex items-center gap-1.5">
+              <i class="fa-solid fa-quote-left text-sky-400 text-xs"></i>
+              <span>Paste exact tweet text here <strong class="text-slate-300 font-medium">(URLs are ignored)</strong></span>
+            </span>
+            <button id="pasteBtn" type="button" class="text-sky-400 hover:text-sky-300 transition flex items-center gap-1 text-[11px] font-medium">
+              <i class="fa-regular fa-clipboard"></i> Paste Tweet
+            </button>
+          </div>
+
+          <textarea id="chatInput" rows="2" placeholder="Paste the tweet text here to generate replies..." class="w-full bg-transparent px-3 py-2.5 pr-14 text-sm text-slate-100 placeholder-slate-500 resize-none outline-none custom-scrollbar max-h-40 font-normal leading-relaxed"></textarea>
+          
+          <div class="flex items-center justify-between px-2 pt-1 border-t border-slate-800/40">
+            <span id="charCount" class="text-[10px] text-slate-500 font-mono">0 chars | 0 words</span>
+            <button id="sendBtn" class="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white shadow-md shadow-sky-500/25 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition">
+              <i class="fa-solid fa-arrow-up text-xs"></i>
+            </button>
+          </div>
+
         </div>
-        <div class="flex items-center justify-between text-[11px] text-slate-500 mt-2.5 px-1">
-          <span>Targeting high-engagement, non-robotic replies</span>
-          <a href="https://x.com/lemonar777" target="_blank" class="hover:text-sky-400 transition">Developed by @lemonar777</a>
+
+        <div class="flex items-center justify-between text-[11px] text-slate-500 mt-2 px-1">
+          <span>Twit AI • This site is for Generating Tweet Reply</span>
+          <a href="https://x.com/lemonar777" target="_blank" class="hover:text-sky-400 transition font-medium">Developed by @lemonar777</a>
         </div>
       </div>
     </div>
 
   </main>
 
+  <!-- Chrome App Modal -->
+  <div id="chromeModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] hidden items-center justify-center p-4">
+    <div class="glass-panel border border-slate-700/80 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+      <button onclick="closeChromeModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      
+      <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl text-amber-400 mb-4">
+        <i class="fa-brands fa-chrome"></i>
+      </div>
+
+      <h3 class="text-lg font-bold text-white mb-1">Twit AI for Chrome</h3>
+      <p class="text-xs text-slate-400 leading-relaxed mb-4">
+        Install the Twit AI extension to generate instant, tailored tweet replies directly inside twitter.com / X with a single click.
+      </p>
+
+      <div class="space-y-2 mb-5">
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 flex items-center gap-3">
+          <i class="fa-solid fa-check text-emerald-400"></i> Adds a "Reply with Twit AI" icon on every tweet
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 flex items-center gap-3">
+          <i class="fa-solid fa-check text-emerald-400"></i> Runs locally with strict anti-bot humanization
+        </div>
+      </div>
+
+      <button id="downloadExtBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-download"></i> Download Chrome App / Extension
+      </button>
+    </div>
+  </div>
+
   <!-- Settings Modal -->
   <div id="configModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] hidden items-center justify-center p-4">
-    <div class="glass-card border border-slate-700/80 rounded-3xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
+    <div class="glass-panel border border-slate-700/80 rounded-3xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
       
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div class="flex items-center gap-2.5">
           <div class="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
             <i class="fa-solid fa-sliders"></i>
           </div>
-          <h3 class="text-base font-bold text-white">Twit AI Engine Config</h3>
+          <h3 class="text-base font-bold text-white">Generation Rules</h3>
         </div>
         <button id="closeConfigModal" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
 
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="text-xs font-medium text-slate-400 block mb-1.5">Replies to Generate</label>
+          <label class="text-xs font-medium text-slate-400 block mb-1.5">Reply Variations</label>
           <input type="number" id="replyCountInput" min="2" max="8" class="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white focus:border-sky-500 outline-none transition">
         </div>
         <div>
@@ -191,7 +265,7 @@
       </div>
 
       <div>
-        <label class="text-xs font-medium text-slate-400 block mb-1.5">Word Length Target</label>
+        <label class="text-xs font-medium text-slate-400 block mb-1.5">Word Length Range</label>
         <div class="flex items-center gap-3">
           <input type="number" id="minWordsInput" min="5" max="30" class="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white text-center focus:border-sky-500 outline-none transition">
           <span class="text-slate-500 text-xs uppercase tracking-wider font-semibold">to</span>
@@ -201,7 +275,7 @@
       </div>
 
       <div>
-        <label class="text-xs font-medium text-slate-400 block mb-1.5">Tone & Personality</label>
+        <label class="text-xs font-medium text-slate-400 block mb-1.5">Reply Tone & Style</label>
         <select id="toneSelector" class="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white focus:border-sky-500 outline-none transition">
           <option value="balanced">Balanced CT (Organic & Casual)</option>
           <option value="technical">Technical / Protocol Deep-dive</option>
@@ -213,21 +287,16 @@
       </div>
 
       <div>
-        <label class="text-xs font-medium text-slate-400 block mb-1.5">Target Project / Ticker (Optional)</label>
-        <input type="text" id="projectTag" placeholder="e.g. $BTC, @ethereum, Solana" class="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white focus:border-sky-500 outline-none transition">
+        <label class="text-xs font-medium text-slate-400 block mb-1.5">Include Ticker or Handle (Optional)</label>
+        <input type="text" id="projectTag" placeholder="e.g. $BTC, @arbitrum" class="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-sm text-white focus:border-sky-500 outline-none transition">
       </div>
 
-      <div class="bg-sky-950/20 border border-sky-500/20 p-3.5 rounded-2xl text-[11px] text-sky-200/80 space-y-1.5">
-        <p class="flex items-center gap-2"><i class="fa-solid fa-shield-halved text-sky-400"></i> Strictly filters out generic AI clichés ("Let's dive in", "Game changer").</p>
-        <p class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-400"></i> Formatted for instant 1-click posting to X.</p>
-      </div>
-
-      <button id="saveConfigBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-semibold text-sm transition shadow-lg shadow-sky-500/20">Save Configuration</button>
+      <button id="saveConfigBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-semibold text-sm transition shadow-lg shadow-sky-500/20">Apply Settings</button>
     </div>
   </div>
 
   <script>
-    // --- State Management ---
+    // --- State ---
     const state = {
       chats: [],
       currentChatId: null,
@@ -258,11 +327,11 @@
       localStorage.setItem('twitAiState', JSON.stringify(state));
     }
 
-    // --- Chat Logic ---
+    // --- Chat Management ---
     function createNewChat(render = true) {
       const newChat = {
         id: Date.now().toString(),
-        title: "New Draft",
+        title: "New Tweet Reply",
         messages: []
       };
       state.chats.unshift(newChat);
@@ -314,7 +383,7 @@
             <i class="fa-regular fa-comment-dots ${isActive ? 'text-sky-400' : 'text-slate-500'}"></i>
             <span class="truncate">${escapeHtml(chat.title)}</span>
           </div>
-          <button class="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1" onclick="deleteChat('${chat.id}', event)">
+          <button class="text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition p-1" onclick="deleteChat('${chat.id}', event)">
             <i class="fa-regular fa-trash-can"></i>
           </button>
         `;
@@ -329,21 +398,37 @@
       
       if (!chat || chat.messages.length === 0) {
         container.innerHTML = `
-          <div class="h-full flex flex-col items-center justify-center text-center pt-24 pb-12 px-4">
-            <div class="relative mb-6">
+          <div class="h-full flex flex-col items-center justify-center text-center pt-20 pb-10 px-4">
+            
+            <div class="relative mb-5">
               <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-sky-500/20 to-indigo-500/20 border border-sky-500/30 flex items-center justify-center text-3xl text-sky-400 glow-brand">
-                <i class="fa-solid fa-sparkles"></i>
+                <svg class="w-10 h-10" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 28L14 24H30C32.2091 24 34 22.2091 34 20V12C34 9.79086 32.2091 8 30 8H10C7.79086 8 6 9.79086 6 12V26C6 27.1046 6.89543 28 8 28Z" stroke="url(#hero_grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M14 16L18 20M18 16L14 20" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
+                  <circle cx="25" cy="18" r="2.5" fill="#818cf8"/>
+                  <defs>
+                    <linearGradient id="hero_grad" x1="6" y1="8" x2="34" y2="28" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#38BDF8"/>
+                      <stop offset="1" stop-color="#818CF8"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
               </div>
             </div>
-            <h2 class="text-2xl font-bold bg-gradient-to-r from-white via-slate-100 to-sky-200 bg-clip-text text-transparent mb-2">Twit AI</h2>
-            <p class="text-sm text-sky-400 font-medium mb-3">Generating Tweet Reply</p>
-            <p class="text-xs text-slate-400 max-w-sm leading-relaxed mb-6">
-              Drop any tweet URL or raw text here. Twit AI crafts ultra-engaging, organic responses tuned for algorithmic boost.
+
+            <h2 class="text-2xl font-black bg-gradient-to-r from-white via-slate-100 to-sky-200 bg-clip-text text-transparent mb-1">Twit AI</h2>
+            <p class="text-sm font-semibold text-sky-400 mb-3 tracking-wide">This site is for Generating Tweet Reply</p>
+            <p class="text-xs text-slate-400 max-w-md leading-relaxed mb-6">
+              Paste the plain text of the tweet you want to reply to. Twit AI crafts non-generic, high-signal responses designed to boost visibility.
             </p>
+            
             <div class="flex flex-wrap justify-center gap-2">
-              <span class="text-[11px] px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-slate-300"><i class="fa-solid fa-ban text-rose-400 mr-1"></i> No AI Fluff</span>
-              <span class="text-[11px] px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-slate-300"><i class="fa-solid fa-bolt text-amber-400 mr-1"></i> High Engagement</span>
-              <span class="text-[11px] px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-slate-300"><i class="fa-solid fa-sliders text-sky-400 mr-1"></i> Custom Word Length</span>
+              <span class="text-[11px] px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-file-lines text-sky-400"></i> Pure Tweet Text (No Links)
+              </span>
+              <span class="text-[11px] px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-shield-halved text-emerald-400"></i> Anti-Bot Patterning
+              </span>
             </div>
           </div>
         `;
@@ -356,7 +441,10 @@
         
         if (msg.role === 'user') {
           div.innerHTML = `
-            <div class="bg-gradient-to-r from-sky-600/30 to-indigo-600/30 border border-sky-500/30 rounded-2xl rounded-br-sm px-4 py-3 max-w-[85%] text-xs md:text-sm text-slate-100 shadow-lg leading-relaxed whitespace-pre-wrap">
+            <div class="bg-gradient-to-r from-sky-600/25 to-indigo-600/25 border border-sky-500/30 rounded-2xl rounded-br-sm p-4 max-w-[85%] text-xs md:text-sm text-slate-100 shadow-xl leading-relaxed whitespace-pre-wrap">
+              <div class="flex items-center gap-2 text-[10px] text-sky-400 font-mono mb-1.5">
+                <i class="fa-brands fa-x-twitter"></i> <span>Original Tweet Text:</span>
+              </div>
               ${escapeHtml(msg.content)}
             </div>
           `;
@@ -366,15 +454,15 @@
           
           if (msg.loading) {
             replyContainer.innerHTML = `
-              <div class="glass-card rounded-2xl p-4 flex items-center gap-3 text-slate-300 text-xs border-slate-800">
+              <div class="glass-panel rounded-2xl p-4 flex items-center gap-3 text-slate-300 text-xs border-slate-800">
                 <div class="w-4 h-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div> 
-                <span>Generating tailored tweet replies...</span>
+                <span>Generating high-engagement replies...</span>
               </div>
             `;
           } else {
             msg.content.forEach((replyText) => {
               const card = document.createElement('div');
-              card.className = "glass-card glass-card-interactive rounded-2xl p-4 group relative";
+              card.className = "glass-panel glass-card-interactive rounded-2xl p-4 group relative";
               
               const wCount = countWords(replyText);
               const inRange = wCount >= state.settings.minWords && wCount <= state.settings.maxWords;
@@ -386,7 +474,7 @@
                     ${wCount} words
                   </span>
                   <div class="flex items-center gap-1.5">
-                    <a href="${tweetIntentUrl}" target="_blank" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-sky-500 text-slate-300 hover:text-white text-[11px] font-medium transition flex items-center gap-1.5 border border-slate-700/60 hover:border-transparent shadow-sm">
+                    <a href="${tweetIntentUrl}" target="_blank" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-[#1d9bf0] text-slate-300 hover:text-white text-[11px] font-medium transition flex items-center gap-1.5 border border-slate-700/60 shadow-sm">
                       <i class="fa-brands fa-x-twitter text-[10px]"></i> Tweet
                     </a>
                     <button class="copy-btn px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500 text-sky-300 hover:text-white text-[11px] font-medium transition flex items-center gap-1.5 border border-sky-500/30 hover:border-transparent shadow-sm">
@@ -399,7 +487,7 @@
               
               card.querySelector('.copy-btn').addEventListener('click', () => {
                 copyToClipboard(replyText);
-                showToast('Copied to clipboard!');
+                showToast('Copied reply to clipboard!');
               });
               
               replyContainer.appendChild(card);
@@ -425,6 +513,11 @@
       return div.innerHTML;
     }
 
+    function sanitizeTweetInput(raw) {
+      // Filter out links if user accidentally pastes URLs
+      return raw.replace(/https?:\/\/\S+/gi, '').trim();
+    }
+
     function copyToClipboard(text) {
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text);
@@ -443,7 +536,7 @@
       if (!toast) {
         toast = document.createElement('div');
         toast.id = 'toast';
-        toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-full bg-sky-500 text-white font-medium text-xs shadow-2xl transition-all transform translate-y-20 opacity-0 pointer-events-none z-[70] flex items-center gap-2 border border-sky-300/40';
+        toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-full bg-sky-500 text-white font-semibold text-xs shadow-2xl transition-all transform translate-y-20 opacity-0 pointer-events-none z-[80] flex items-center gap-2 border border-sky-300/40';
         document.body.appendChild(toast);
       }
       toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>${message}</span>`;
@@ -451,7 +544,17 @@
       clearTimeout(toast.timeoutId);
       toast.timeoutId = setTimeout(() => {
         toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
-      }, 2000);
+      }, 2200);
+    }
+
+    function openChromeModal() {
+      document.getElementById('chromeModal').classList.remove('hidden');
+      document.getElementById('chromeModal').classList.add('flex');
+    }
+
+    function closeChromeModal() {
+      document.getElementById('chromeModal').classList.add('hidden');
+      document.getElementById('chromeModal').classList.remove('flex');
     }
 
     function parseReplies(rawText) {
@@ -468,24 +571,29 @@
       return replies;
     }
 
-    // --- Actions ---
+    // --- Message Send Flow ---
     async function sendMessage() {
       const input = document.getElementById('chatInput');
-      const text = input.value.trim();
-      if (!text) return;
+      const cleanTweet = sanitizeTweetInput(input.value);
+
+      if (!cleanTweet) {
+        showToast('Please paste the tweet text (no URLs)');
+        return;
+      }
 
       const chat = state.chats.find(c => c.id === state.currentChatId);
       if (!chat) return;
 
-      chat.messages.push({ role: 'user', content: text });
+      chat.messages.push({ role: 'user', content: cleanTweet });
       chat.messages.push({ role: 'assistant', content: [], loading: true });
       
       if (chat.messages.length === 2) {
-        chat.title = text.substring(0, 32) + (text.length > 32 ? '...' : '');
+        chat.title = cleanTweet.substring(0, 30) + (cleanTweet.length > 30 ? '...' : '');
       }
 
       input.value = '';
       input.style.height = 'auto';
+      updateCounters('');
       saveState();
       renderChatList();
       renderMessages();
@@ -495,7 +603,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            tweet: text,
+            tweet: cleanTweet,
             minWords: state.settings.minWords,
             maxWords: state.settings.maxWords,
             replyCount: state.settings.replyCount,
@@ -520,13 +628,19 @@
       }
     }
 
-    // --- Init ---
+    function updateCounters(str) {
+      const chars = str.length;
+      const words = countWords(str);
+      document.getElementById('charCount').textContent = `${chars} chars | ${words} words`;
+    }
+
+    // --- Event Listeners ---
     document.addEventListener('DOMContentLoaded', () => {
       loadState();
       renderChatList();
       renderMessages();
 
-      // Settings setup
+      // Config state
       document.getElementById('replyCountInput').value = state.settings.replyCount;
       document.getElementById('minWordsInput').value = state.settings.minWords;
       document.getElementById('maxWordsInput').value = state.settings.maxWords;
@@ -534,7 +648,7 @@
       document.getElementById('projectTag').value = state.settings.tag;
       document.getElementById('languageSelect').value = state.settings.language;
 
-      // Sidebar interactions
+      // Sidebar events
       document.getElementById('newChatBtn').addEventListener('click', () => createNewChat());
       document.getElementById('toggleSidebar').addEventListener('click', () => {
         const sidebar = document.getElementById('sidebar');
@@ -547,14 +661,48 @@
         document.getElementById('sidebarOverlay').classList.add('hidden');
       });
 
-      // Input interactions
+      // Paste button logic
+      document.getElementById('pasteBtn').addEventListener('click', async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          const input = document.getElementById('chatInput');
+          input.value = sanitizeTweetInput(text);
+          input.focus();
+          updateCounters(input.value);
+        } catch {
+          showToast('Clipboard access denied. Please paste manually.');
+        }
+      });
+
+      // Chrome Extension download mock/manifest trigger
+      document.getElementById('downloadExtBtn').addEventListener('click', () => {
+        const manifest = {
+          name: "Twit AI - Tweet Reply Assistant",
+          version: "1.0.0",
+          manifest_version: 3,
+          description: "This app is for Generating Tweet Reply by @lemonar777"
+        };
+        const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "twit-ai-extension-manifest.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        closeChromeModal();
+        showToast("Downloaded Twit AI Extension Manifest!");
+      });
+
+      // Chat input
       const input = document.getElementById('chatInput');
       const sendBtn = document.getElementById('sendBtn');
       
       input.addEventListener('input', () => {
         input.style.height = 'auto';
         input.style.height = input.scrollHeight + 'px';
+        updateCounters(input.value);
       });
+      
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
@@ -563,7 +711,7 @@
       });
       sendBtn.addEventListener('click', sendMessage);
 
-      // Modal interactions
+      // Modal events
       const configModal = document.getElementById('configModal');
       document.getElementById('configBtn').addEventListener('click', () => configModal.classList.remove('hidden'));
       document.getElementById('closeConfigModal').addEventListener('click', () => configModal.classList.add('hidden'));
@@ -576,7 +724,7 @@
         state.settings.language = document.getElementById('languageSelect').value;
         saveState();
         configModal.classList.add('hidden');
-        showToast('Settings applied!');
+        showToast('Settings saved!');
       });
     });
   </script>
