@@ -13,16 +13,26 @@
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z'/></svg>">
   
-  <!-- Inline PWA Web App Manifest (Fixes 404 manifest issue) -->
-  <link rel="manifest" href='data:application/manifest+json,{"name":"Twit AI","short_name":"Twit AI","start_url":".","display":"standalone","background_color":"#070a12","theme_color":"#070a12","icons":[{"src":"data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%2338bdf8%22%3E%3Cpath%20d%3D%22M20%202H4c-1.1%200-2%20.9-2%202v18l4-4h14c1.1%200%202-.9%202-2V4c0-1.1-.9-2-2-2zM9%2011H7V9h2v2zm4%200h-2V9h2v2zm4%200h-2V9h2v2z%22%2F%3E%3C%2Fsvg%3E","sizes":"any","type":"image/svg+xml"}]}'>
+  <!-- Valid PWA Web App Manifest (PNG Icon required by Chromium engines) -->
+  <link rel="manifest" href='data:application/manifest+json,{"name":"Twit AI","short_name":"Twit AI","start_url":"/","scope":"/","display":"standalone","background_color":"#070a12","theme_color":"#070a12","icons":[{"src":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAMAAAB/Pny7AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAAZQTFRFOK3d////lqPzfwAAAAJ0Uk5T/wDltzBKAAAAUklEQVR42uzBAQ0AAADCIPuntsUeYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwK8BK3gAAep8tL8AAAAASUVORK5CYII=","sizes":"192x192","type":"image/png","purpose":"any maskable"},{"src":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAMAAAB/Pny7AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAAZQTFRFOK3d////lqPzfwAAAAJ0Uk5T/wDltzBKAAAAUklEQVR42uzBAQ0AAADCIPuntsUeYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwK8BK3gAAep8tL8AAAAASUVORK5CYII=","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}'>
 
-  <!-- PWA Service Worker -->
+  <!-- PWA Service Worker (Registers inline worker if /sw.js is not present) -->
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("/sw.js", { scope: "/" })
           .then(reg => console.log("Twit AI service worker ready:", reg.scope))
-          .catch(err => console.warn("Twit AI service worker unavailable. Please ensure /sw.js exists.", err));
+          .catch(() => {
+            const swBlob = new Blob([
+              "self.addEventListener('install', e => self.skipWaiting());",
+              "self.addEventListener('activate', e => clients.claim());",
+              "self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response('Twit AI Offline'))));"
+            ], { type: "application/javascript" });
+            const swUrl = URL.createObjectURL(swBlob);
+            navigator.serviceWorker.register(swUrl, { scope: "/" })
+              .then(reg => console.log("Inline fallback worker ready:", reg.scope))
+              .catch(err => console.warn("SW registration failed:", err));
+          });
       });
     }
   </script>
@@ -830,7 +840,7 @@
     }
 
     // ------------------------------------------------------------ //
-    // PWA Installation (Fixed Manifest Issue)
+    // PWA Installation
     // ------------------------------------------------------------ //
     let deferredPrompt = null;
 
@@ -840,7 +850,7 @@
     }
 
     function setInstallAvailable(available) {
-      ["installAppBtn", "headerInstallBtn"].forEach(id => {
+      ["installAppBtn", "headerInstallBtn", "directInstallBtn"].forEach(id => {
         const el = $(id);
         if (!el) return;
         el.classList.toggle("ring-2", available);
