@@ -8,7 +8,12 @@
   <meta name="theme-color" content="#070a12">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Twit AI">
   <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- PWA Manifest for Chrome PC & Android App Installation -->
+  <link rel="manifest" href='data:application/manifest+json,{"name":"Twit AI - Tweet Reply Generator","short_name":"Twit AI","start_url":".","display":"standalone","background_color":"#070a12","theme_color":"#070a12","description":"Natural replies for X and Twitter","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/733/733579.png","sizes":"192x192","type":"image/png"},{"src":"https://cdn-icons-png.flaticon.com/512/733/733579.png","sizes":"512x512","type":"image/png"}]}'>
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/733/733579.png">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -272,6 +277,15 @@
       <div id="chatList" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar smooth-scroll px-3 space-y-1"></div>
 
       <div class="p-3 border-t border-slate-800/70 space-y-2 bg-[#060910]/90 flex-shrink-0 safe-bottom">
+        <!-- Install App Sidebar Button -->
+        <button id="sidebarInstallBtn"
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-300 hover:text-white transition text-xs font-medium active:scale-[0.98]">
+          <span class="flex items-center gap-2.5">
+            <i class="fa-solid fa-cloud-arrow-down text-sky-400"></i> Install App
+          </span>
+          <span id="sidebarInstallBadge" class="text-[9px] px-1.5 py-0.5 rounded bg-sky-400/20 text-sky-300">Fast Setup</span>
+        </button>
+
         <button id="configBtn"
           class="w-full flex items-center justify-between px-3 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-xs font-medium active:scale-[0.98]">
           <span class="flex items-center gap-2.5">
@@ -287,6 +301,17 @@
               <i class="fa-brands fa-x-twitter text-[10px]"></i>
             </span>
             <span>Developed by <strong class="text-sky-400">@lemonar777</strong></span>
+          </div>
+          <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-500"></i>
+        </a>
+
+        <a href="mailto:admin@twitai.app"
+          class="flex items-center justify-between px-3 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-sky-500/40 text-slate-400 hover:text-white transition text-xs active:scale-[0.98]">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full bg-sky-500/10 flex items-center justify-center text-sky-400 border border-sky-500/20">
+              <i class="fa-solid fa-envelope text-[10px]"></i>
+            </span>
+            <span>admin@twitai.app</span>
           </div>
           <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-500"></i>
         </a>
@@ -309,9 +334,17 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <!-- Install App Header Trigger -->
+          <button id="headerInstallBtn"
+            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium text-sky-300 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/40 shadow-sm shadow-sky-500/10 transition active:scale-95"
+            title="Install App / Add to Home Screen">
+            <i class="fa-solid fa-arrow-down-to-bracket text-sky-400"></i>
+            <span class="hidden sm:inline">Install App</span>
+          </button>
+
           <a href="https://x.com/lemonar777" target="_blank" rel="noopener noreferrer"
-            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-400 bg-slate-800/70 hover:text-white border border-slate-700/60 transition">
+            class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-400 bg-slate-800/70 hover:text-white border border-slate-700/60 transition">
             <i class="fa-brands fa-x-twitter"></i> @lemonar777
           </a>
 
@@ -374,7 +407,14 @@
 
           <div class="hidden sm:flex items-center justify-between text-[10px] text-slate-500 mt-2 px-1">
             <span>Twit AI • This site is for Generating Tweet Reply</span>
-            <span>Developed by @lemonar777</span>
+            <div class="flex items-center gap-3">
+              <a href="mailto:admin@twitai.app" class="hover:text-sky-400 transition flex items-center gap-1.5">
+                <i class="fa-regular fa-envelope text-sky-400"></i>
+                <span>admin@twitai.app</span>
+              </a>
+              <span class="text-slate-700">•</span>
+              <span>Developed by @lemonar777</span>
+            </div>
           </div>
         </div>
       </div>
@@ -435,6 +475,15 @@
 
       <div id="subscriptionInfo" class="mt-3 rounded-xl bg-slate-900/80 border border-slate-800 p-4 text-xs text-slate-300"></div>
 
+      <div class="mt-3 px-3 py-2 rounded-xl bg-slate-900/50 border border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
+        <span class="flex items-center gap-2">
+          <i class="fa-solid fa-headset text-sky-400"></i> Need support?
+        </span>
+        <a href="mailto:admin@twitai.app" class="text-sky-400 hover:text-sky-300 font-medium hover:underline flex items-center gap-1">
+          admin@twitai.app
+        </a>
+      </div>
+
       <button id="subscribeFromAccount"
         class="btn-gradient w-full mt-4 py-3.5 rounded-xl text-white font-semibold text-sm active:scale-[0.97] transition">
         Subscribe
@@ -477,7 +526,7 @@
     </div>
   </div>
 
-  <!-- Generation rules -->
+  <!-- Generation rules modal -->
   <div id="configModal" class="fixed inset-0 modal-backdrop z-[100] hidden items-center justify-center p-4">
     <div class="glass w-full max-w-md rounded-3xl p-5 sm:p-6 relative max-h-[92dvh] overflow-y-auto custom-scrollbar scale-in">
       <button id="closeConfigModal" class="absolute top-4 right-4 w-9 h-9 rounded-full hover:bg-slate-800 text-slate-500 hover:text-white flex items-center justify-center transition">
@@ -534,6 +583,147 @@
         <button id="saveConfigBtn"
           class="btn-gradient w-full py-3.5 rounded-xl text-white font-semibold text-sm active:scale-[0.97] transition">
           Apply Settings
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Install App Modal with Tabbed Instructions -->
+  <div id="installModal" class="fixed inset-0 modal-backdrop z-[100] hidden items-center justify-center p-4">
+    <div class="glass w-full max-w-lg rounded-3xl p-5 sm:p-6 relative max-h-[92dvh] overflow-y-auto custom-scrollbar scale-in">
+      <button class="modalClose absolute top-4 right-4 w-9 h-9 rounded-full hover:bg-slate-800 text-slate-500 hover:text-white flex items-center justify-center transition" data-modal="installModal">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/25 flex-shrink-0">
+          <i class="fa-solid fa-mobile-screen-button text-white text-xl"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            Install Twit AI App
+            <span id="detectedBadge" class="text-[9px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-normal border border-sky-400/30">Detected</span>
+          </h2>
+          <p class="text-xs text-slate-400">Launch fullscreen with instant response and no browser frame.</p>
+        </div>
+      </div>
+
+      <!-- One-click Direct Trigger for Chrome PC & Android -->
+      <div id="nativeInstallPromptCard" class="mt-4 hidden p-3.5 rounded-2xl bg-gradient-to-r from-sky-500/20 to-indigo-500/20 border border-sky-400/40">
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-xs font-bold text-white flex items-center gap-1.5">
+              <i class="fa-solid fa-bolt text-amber-400"></i> Instant Install Ready
+            </div>
+            <p class="text-[11px] text-slate-300 truncate">1-Click Chrome App Installation available!</p>
+          </div>
+          <button id="directInstallBtn" class="btn-gradient px-4 py-2 rounded-xl text-white font-semibold text-xs whitespace-nowrap shadow-md shadow-sky-500/20 active:scale-95 transition">
+            <i class="fa-solid fa-download mr-1"></i> Install Now
+          </button>
+        </div>
+      </div>
+
+      <!-- Platform Selection Tabs -->
+      <div class="mt-5 flex gap-1.5 p-1 rounded-xl bg-slate-900/90 border border-slate-800 text-xs overflow-x-auto custom-scrollbar">
+        <button class="installTabBtn flex-1 min-w-[75px] py-2 px-2.5 rounded-lg font-medium transition text-center" data-tab="android">
+          <i class="fa-brands fa-android mr-1"></i> Android
+        </button>
+        <button class="installTabBtn flex-1 min-w-[75px] py-2 px-2.5 rounded-lg font-medium transition text-center" data-tab="pc">
+          <i class="fa-brands fa-chrome mr-1"></i> PC Chrome
+        </button>
+        <button class="installTabBtn flex-1 min-w-[75px] py-2 px-2.5 rounded-lg font-medium transition text-center" data-tab="ios">
+          <i class="fa-brands fa-apple mr-1"></i> iOS
+        </button>
+        <button class="installTabBtn flex-1 min-w-[75px] py-2 px-2.5 rounded-lg font-medium transition text-center" data-tab="mac">
+          <i class="fa-solid fa-laptop mr-1"></i> Mac
+        </button>
+      </div>
+
+      <!-- Tab Content: Android Chrome -->
+      <div id="tab-android" class="installTabContent mt-4 space-y-3">
+        <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 space-y-2.5">
+          <div class="text-xs font-semibold text-sky-400 flex items-center gap-2">
+            <i class="fa-solid fa-circle-check"></i> Chrome for Android
+          </div>
+          <ol class="text-xs text-slate-300 space-y-2 list-decimal list-inside leading-relaxed">
+            <li>Tap the <strong class="text-white font-semibold">Install Now</strong> button above if visible.</li>
+            <li>Alternatively, tap the <strong class="text-white font-semibold"><i class="fa-solid fa-ellipsis-vertical mx-1"></i> (three dots)</strong> menu in the top right of Chrome.</li>
+            <li>Select <strong class="text-white font-semibold">"Install app"</strong> or <strong class="text-white font-semibold">"Add to Home screen"</strong>.</li>
+            <li>Tap <strong class="text-sky-400">"Install"</strong> to place Twit AI on your home screen and app drawer.</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Tab Content: PC Chrome / Edge -->
+      <div id="tab-pc" class="installTabContent mt-4 space-y-3 hidden">
+        <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 space-y-2.5">
+          <div class="text-xs font-semibold text-sky-400 flex items-center gap-2">
+            <i class="fa-solid fa-desktop"></i> Google Chrome & Edge on Windows / Linux
+          </div>
+          <ol class="text-xs text-slate-300 space-y-2 list-decimal list-inside leading-relaxed">
+            <li>Look at the right side of the Chrome address bar for the <strong class="text-white font-semibold"><i class="fa-solid fa-circle-down mx-1 text-sky-400"></i> Install icon</strong>.</li>
+            <li>Click the icon and select <strong class="text-white font-semibold">"Install"</strong>.</li>
+            <li>Or click the <strong class="text-white font-semibold"><i class="fa-solid fa-ellipsis-vertical mx-1"></i> (three dots)</strong> menu &rarr; <strong class="text-white font-semibold">"Save and Share"</strong> &rarr; <strong class="text-sky-400">"Install Twit AI..."</strong></li>
+            <li>Twit AI will now run as an independent desktop application in its own standalone window.</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Tab Content: iOS (iPhone / iPad) -->
+      <div id="tab-ios" class="installTabContent mt-4 space-y-3 hidden">
+        <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 space-y-2.5">
+          <div class="text-xs font-semibold text-sky-400 flex items-center gap-2">
+            <i class="fa-brands fa-apple"></i> Safari on iPhone & iPad
+          </div>
+          <ol class="text-xs text-slate-300 space-y-2.5 leading-relaxed">
+            <li class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-slate-800 text-sky-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">1</span>
+              <span>Open this site in <strong class="text-white">Safari</strong> (iOS requirement for home screen apps).</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-slate-800 text-sky-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">2</span>
+              <span>Tap the <strong class="text-white"><i class="fa-solid fa-arrow-up-from-bracket mx-1 text-sky-400"></i> Share</strong> button in the bottom menu bar.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-slate-800 text-sky-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">3</span>
+              <span>Scroll down and select <strong class="text-white"><i class="fa-regular fa-square-plus mx-1 text-emerald-400"></i> "Add to Home Screen"</strong>.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="w-5 h-5 rounded-full bg-slate-800 text-sky-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">4</span>
+              <span>Tap <strong class="text-sky-400 font-semibold">"Add"</strong> in the top-right corner to finish.</span>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Tab Content: Mac (macOS Chrome & Safari) -->
+      <div id="tab-mac" class="installTabContent mt-4 space-y-3 hidden">
+        <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 space-y-3">
+          <div>
+            <div class="text-xs font-semibold text-sky-400 flex items-center gap-2 mb-1.5">
+              <i class="fa-brands fa-chrome"></i> Method 1: In Chrome on macOS
+            </div>
+            <ol class="text-xs text-slate-300 space-y-1.5 list-decimal list-inside leading-relaxed">
+              <li>Click the <strong class="text-white font-semibold">Install icon</strong> <i class="fa-solid fa-circle-down mx-1 text-sky-400"></i> on the right of the URL bar.</li>
+              <li>Or click menu <strong class="text-white font-semibold"><i class="fa-solid fa-ellipsis-vertical mx-1"></i></strong> &rarr; <strong class="text-white">Save and Share</strong> &rarr; <strong class="text-sky-400">Install Twit AI</strong>.</li>
+            </ol>
+          </div>
+          <div class="border-t border-slate-800/70 pt-2.5">
+            <div class="text-xs font-semibold text-indigo-400 flex items-center gap-2 mb-1.5">
+              <i class="fa-brands fa-safari"></i> Method 2: In Safari (macOS Sonoma+)
+            </div>
+            <ol class="text-xs text-slate-300 space-y-1.5 list-decimal list-inside leading-relaxed">
+              <li>Click <strong class="text-white font-semibold">File</strong> in the top Apple menu bar.</li>
+              <li>Choose <strong class="text-sky-400 font-semibold">"Add to Dock..."</strong> and click <strong class="text-white">Add</strong>.</li>
+              <li>Twit AI will now sit in your macOS Dock like a native Mac app!</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5 flex justify-end">
+        <button class="modalClose px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition" data-modal="installModal">
+          Close
         </button>
       </div>
     </div>
@@ -605,10 +795,24 @@
       plans: {},
       paymentConfig: null,
       selectedPlan: null,
-      isGenerating: false
+      isGenerating: false,
+      deferredPrompt: null
     };
 
     const $ = id => document.getElementById(id);
+
+    // Minimal service worker registration to enable native Chrome install prompt (PC & Android)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        try {
+          const swCode = `self.addEventListener('fetch', function(e) {});`;
+          const blob = new Blob([swCode], { type: 'text/javascript' });
+          navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+        } catch (e) {
+          // Silent fallback
+        }
+      });
+    }
 
     // ---- Local state ----
     function loadLocalState() {
@@ -767,7 +971,6 @@
             await navigator.clipboard.writeText(text);
             showToast("Copied reply");
           } catch {
-            // Fallback
             const ta = document.createElement("textarea");
             ta.value = text;
             document.body.appendChild(ta);
@@ -848,6 +1051,90 @@
       t.classList.remove("translate-y-20", "opacity-0");
       clearTimeout(t._timer);
       t._timer = setTimeout(() => t.classList.add("translate-y-20", "opacity-0"), 2500);
+    }
+
+    // ---- Chrome App Installation & Platform Guidance Functionality ----
+    function detectPlatform() {
+      const ua = navigator.userAgent || "";
+      const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isAndroid = /Android/i.test(ua);
+      const isMac = /Macintosh|Mac OS X/i.test(ua) && !isIOS;
+      const isPC = /Windows|Linux|CrOS/i.test(ua) && !isAndroid;
+
+      if (isIOS) return "ios";
+      if (isAndroid) return "android";
+      if (isMac) return "mac";
+      if (isPC) return "pc";
+      return "android"; // default fallback
+    }
+
+    function setInstallTab(tabId) {
+      document.querySelectorAll(".installTabBtn").forEach(btn => {
+        if (btn.dataset.tab === tabId) {
+          btn.classList.add("bg-sky-500", "text-white");
+          btn.classList.remove("text-slate-400", "hover:text-slate-200");
+        } else {
+          btn.classList.remove("bg-sky-500", "text-white");
+          btn.classList.add("text-slate-400", "hover:text-slate-200");
+        }
+      });
+
+      document.querySelectorAll(".installTabContent").forEach(content => {
+        if (content.id === `tab-${tabId}`) {
+          content.classList.remove("hidden");
+        } else {
+          content.classList.add("hidden");
+        }
+      });
+    }
+
+    // Capture Chrome beforeinstallprompt for PC & Android
+    window.addEventListener("beforeinstallprompt", e => {
+      e.preventDefault();
+      state.deferredPrompt = e;
+      const nativeCard = $("nativeInstallPromptCard");
+      if (nativeCard) nativeCard.classList.remove("hidden");
+      const badge = $("sidebarInstallBadge");
+      if (badge) {
+        badge.textContent = "1-Click Ready";
+        badge.className = "text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold animate-pulse";
+      }
+    });
+
+    window.addEventListener("appinstalled", () => {
+      state.deferredPrompt = null;
+      const nativeCard = $("nativeInstallPromptCard");
+      if (nativeCard) nativeCard.classList.add("hidden");
+      closeModal("installModal");
+      showToast("Twit AI App installed successfully!");
+    });
+
+    async function triggerDirectInstall() {
+      if (state.deferredPrompt) {
+        state.deferredPrompt.prompt();
+        const { outcome } = await state.deferredPrompt.userChoice;
+        if (outcome === "accepted") {
+          showToast("Installing Twit AI...");
+        }
+        state.deferredPrompt = null;
+        $("nativeInstallPromptCard").classList.add("hidden");
+      } else {
+        showToast("Use the step-by-step instructions below");
+      }
+    }
+
+    function openInstallModal() {
+      const platform = detectPlatform();
+      const badge = $("detectedBadge");
+      const names = { ios: "iOS Device", android: "Android", mac: "macOS", pc: "PC Chrome" };
+      if (badge) badge.textContent = names[platform] || "Auto-Detected";
+
+      if (state.deferredPrompt) {
+        $("nativeInstallPromptCard").classList.remove("hidden");
+      }
+
+      setInstallTab(platform);
+      openModal("installModal");
     }
 
     // ---- API ----
@@ -975,16 +1262,13 @@
 
       try {
         if (isMobileDevice()) {
-          // Use redirect on mobile - more reliable than popup
           await signInWithRedirect(auth, googleProvider);
-          // Page will reload after redirect, getRedirectResult handles it
         } else {
           try {
             await signInWithPopup(auth, googleProvider);
             closeModal("loginModal");
             showToast("Signed in successfully");
           } catch (popupErr) {
-            // If popup fails, fall back to redirect
             if (popupErr.code === 'auth/popup-blocked' ||
                 popupErr.code === 'auth/cancelled-popup-request' ||
                 popupErr.code === 'auth/popup-closed-by-user' ||
@@ -1033,7 +1317,7 @@
       }
     }
 
-    // ---- Send message (API based generation - unchanged process) ----
+    // ---- Send message ----
     async function sendMessage() {
       if (state.isGenerating) return;
       const input = $("chatInput");
@@ -1147,6 +1431,18 @@
     }
 
     // ---- Event listeners ----
+    $("headerInstallBtn").addEventListener("click", openInstallModal);
+    $("sidebarInstallBtn").addEventListener("click", () => {
+      closeSidebar();
+      openInstallModal();
+    });
+    $("directInstallBtn").addEventListener("click", triggerDirectInstall);
+
+    // Install tab switching
+    document.querySelectorAll(".installTabBtn").forEach(btn => {
+      btn.addEventListener("click", () => setInstallTab(btn.dataset.tab));
+    });
+
     $("loginBtn").addEventListener("click", () => openModal("loginModal"));
     $("googleLoginBtn").addEventListener("click", loginGoogle);
     $("logoutBtn").addEventListener("click", logout);
@@ -1237,7 +1533,12 @@
 
     // Close sidebar on escape
     document.addEventListener("keydown", e => {
-      if (e.key === "Escape") closeSidebar();
+      if (e.key === "Escape") {
+        closeSidebar();
+        document.querySelectorAll("[id$='Modal']").forEach(m => {
+          if (!m.classList.contains("hidden")) closeModal(m.id);
+        });
+      }
     });
 
     // ---- Auth state ----
