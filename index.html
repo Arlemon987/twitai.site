@@ -10,6 +10,27 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z'/></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><rect width='24' height='24' rx='6' fill='%23090d16'/><path d='M18 4H6c-1.1 0-2 .9-2 2v14l3-3h11c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 7H8V9h2v2zm3 0h-2V9h2v2zm3 0h-2V9h2v2z' fill='%2338bdf8'/></svg>">
+
+  <!-- PWA Web App Manifest for Direct 1-Click Install -->
+  <link rel="manifest" href='data:application/manifest+json,{"name":"Twit AI","short_name":"TwitAI","start_url":".","display":"standalone","background_color":"%23070a12","theme_color":"%23070a12","icons":[{"src":"data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%2338bdf8%22><path d=%22M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z%22/></svg>","sizes":"192x192 512x512","type":"image/svg+xml"}]}'>
+
+  <!-- Minimal Service Worker required for Chrome One-Click Install Detection -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        const swBlob = new Blob([
+          "self.addEventListener('install', e => self.skipWaiting());\n" +
+          "self.addEventListener('activate', e => clients.claim());\n" +
+          "self.addEventListener('fetch', e => fetch(e.request));"
+        ], { type: 'text/javascript' });
+        navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+      });
+    }
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -160,7 +181,7 @@
     }
     @keyframes shimmer {
       0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
+      100% { background-position: 200% 0; }
     }
 
     /* Slide in animation */
@@ -495,7 +516,7 @@
 
       <p id="paymentMessage" class="text-xs mt-3 hidden"></p>
     </div>
-   </div>
+  </div>
 
   <!-- Install App modal -->
   <div id="installModal" class="fixed inset-0 modal-backdrop z-[100] hidden items-center justify-center p-4">
@@ -514,17 +535,10 @@
       </div>
 
       <div class="mt-5 space-y-4">
-        <!-- Direct Chrome/Android Install Button (when prompt available) -->
-        <div id="directInstallWrapper" class="hidden">
-          <button id="directInstallBtn" class="btn-gradient w-full py-3.5 rounded-xl text-white font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.97] transition shadow-lg shadow-sky-500/20">
-            <i class="fa-brands fa-chrome"></i> Install Automatically (Chrome / Android / PC)
-          </button>
-          <div class="flex items-center gap-2 my-4 text-slate-600">
-            <hr class="flex-1 border-slate-800">
-            <span class="text-[10px] uppercase font-bold text-slate-500">Manual Guide</span>
-            <hr class="flex-1 border-slate-800">
-          </div>
-        </div>
+        <!-- Direct 1-Click Install Button -->
+        <button id="directInstallBtn" class="btn-gradient w-full py-3.5 rounded-xl text-white font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.97] transition shadow-lg shadow-sky-500/20">
+          <i class="fa-brands fa-chrome"></i> Direct Install (Chrome / Android / PC)
+        </button>
 
         <!-- Chrome on PC & Android -->
         <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
@@ -532,7 +546,7 @@
             <i class="fa-brands fa-chrome"></i> Chrome (PC & Android)
           </div>
           <ul class="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
-            <li><strong>PC / Windows:</strong> Look for the <i class="fa-solid fa-circle-down text-sky-400"></i> install icon on the right side of the address bar, or click Chrome menu <i class="fa-solid fa-ellipsis-vertical text-slate-400"></i> &gt; <strong>Install Twit AI...</strong></li>
+            <li><strong>PC / Windows:</strong> Click the <i class="fa-solid fa-circle-down text-sky-400"></i> install icon on the right side of the address bar, or click Chrome menu <i class="fa-solid fa-ellipsis-vertical text-slate-400"></i> &gt; <strong>Install Twit AI...</strong></li>
             <li><strong>Android:</strong> Tap the Chrome menu <i class="fa-solid fa-ellipsis-vertical text-slate-400"></i> at the top right &gt; tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
           </ul>
         </div>
@@ -601,7 +615,7 @@
             <span class="text-slate-500 text-xs">to</span>
             <input id="maxWordsInput" type="number" min="10" max="60" value="18"
               class="w-full px-3.5 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white text-center outline-none focus:border-sky-500 transition">
-        </div>
+          </div>
         </div>
 
         <div>
@@ -661,11 +675,11 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const googleProvider = new GoogleAuthProvider();
+    googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-    // Persist auth across sessions
     setPersistence(auth, browserLocalPersistence).catch(() => {});
 
-    // Handle redirect result (for mobile sign-in)
+    // Catch redirect return on mobile
     getRedirectResult(auth).then(result => {
       if (result && result.user) {
         closeModal("loginModal");
@@ -675,7 +689,7 @@
       console.error("Redirect result error:", e);
       const errEl = $("loginError");
       if (errEl) {
-        errEl.textContent = e.message || "Sign-in redirect failed.";
+        errEl.textContent = e.message || "Sign-in failed. Please try again.";
         errEl.classList.remove("hidden");
       }
     });
@@ -701,24 +715,25 @@
 
     const $ = id => document.getElementById(id);
 
-    // ---- PWA Install Prompt Handler ----
+    // ---- Direct 1-Click PWA Installation ----
     let deferredPrompt = null;
 
-    window.addEventListener("beforeinstallprompt", e => {
+    window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      const wrap = $("directInstallWrapper");
-      if (wrap) wrap.classList.remove("hidden");
+      $("installAppBtn").classList.add("ring-2", "ring-sky-400");
+      $("headerInstallBtn").classList.add("ring-2", "ring-sky-400");
     });
 
     window.addEventListener("appinstalled", () => {
       deferredPrompt = null;
-      const wrap = $("directInstallWrapper");
-      if (wrap) wrap.classList.add("hidden");
-      showToast("Twit AI app installed successfully!");
+      $("installAppBtn").classList.remove("ring-2", "ring-sky-400");
+      $("headerInstallBtn").classList.remove("ring-2", "ring-sky-400");
+      closeModal("installModal");
+      showToast("Twit AI app installed!");
     });
 
-    async function triggerInstallPrompt() {
+    async function handleInstallClick() {
       if (deferredPrompt) {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
@@ -726,8 +741,6 @@
           showToast("Installing Twit AI...");
         }
         deferredPrompt = null;
-        const wrap = $("directInstallWrapper");
-        if (wrap) wrap.classList.add("hidden");
       } else {
         openModal("installModal");
       }
@@ -890,7 +903,6 @@
             await navigator.clipboard.writeText(text);
             showToast("Copied reply");
           } catch {
-            // Fallback
             const ta = document.createElement("textarea");
             ta.value = text;
             document.body.appendChild(ta);
@@ -1080,12 +1092,7 @@
       }
     }
 
-    // ---- Auth ----
-    function isMobileDevice() {
-      return /iPhone|iPad|iPod|Android|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent) ||
-             (navigator.maxTouchPoints > 1 && window.innerWidth < 768);
-    }
-
+    // ---- Mobile Reliable Google Auth ----
     async function loginGoogle() {
       $("loginError").classList.add("hidden");
       const btn = $("googleLoginBtn");
@@ -1094,40 +1101,35 @@
 
       btn.disabled = true;
       icon.className = "fa-solid fa-circle-notch spin";
-      text.textContent = "Signing in...";
+      text.textContent = "Connecting...";
 
       try {
-        if (isMobileDevice()) {
-          // Use redirect on mobile - more reliable than popup
-          await signInWithRedirect(auth, googleProvider);
-          // Page will reload after redirect, getRedirectResult handles it
-        } else {
+        // First try popup - works instantly on PC and many mobile browsers
+        const res = await signInWithPopup(auth, googleProvider);
+        if (res && res.user) {
+          closeModal("loginModal");
+          showToast("Signed in successfully");
+        }
+      } catch (err) {
+        // Fallback to redirect when popup is blocked on mobile Safari / Chrome Android
+        const redirectFallbackCodes = [
+          'auth/popup-blocked',
+          'auth/cancelled-popup-request',
+          'auth/popup-closed-by-user',
+          'auth/internal-error'
+        ];
+        if (redirectFallbackCodes.includes(err.code) || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
           try {
-            await signInWithPopup(auth, googleProvider);
-            closeModal("loginModal");
-            showToast("Signed in successfully");
-          } catch (popupErr) {
-            // If popup fails, fall back to redirect
-            if (popupErr.code === 'auth/popup-blocked' ||
-                popupErr.code === 'auth/cancelled-popup-request' ||
-                popupErr.code === 'auth/popup-closed-by-user' ||
-                popupErr.code === 'auth/unauthorized-domain') {
-              await signInWithRedirect(auth, googleProvider);
-            } else {
-              throw popupErr;
-            }
+            await signInWithRedirect(auth, googleProvider);
+            return;
+          } catch (redErr) {
+            $("loginError").textContent = redErr.message || "Redirect failed.";
+            $("loginError").classList.remove("hidden");
           }
+        } else {
+          $("loginError").textContent = err.message || "Google sign-in failed.";
+          $("loginError").classList.remove("hidden");
         }
-      } catch (e) {
-        console.error("Login error:", e);
-        let msg = e.message || "Google sign-in failed.";
-        if (e.code === 'auth/unauthorized-domain') {
-          msg = "This domain is not authorized. Please contact support.";
-        } else if (e.code === 'auth/operation-not-supported-in-this-environment') {
-          msg = "Sign-in not supported in this environment. Try a different browser.";
-        }
-        $("loginError").textContent = msg;
-        $("loginError").classList.remove("hidden");
       } finally {
         btn.disabled = false;
         icon.className = "fa-brands fa-google";
@@ -1156,7 +1158,7 @@
       }
     }
 
-    // ---- Send message (API based generation - unchanged process) ----
+    // ---- Send message ----
     async function sendMessage() {
       if (state.isGenerating) return;
       const input = $("chatInput");
@@ -1285,11 +1287,10 @@
     $("newChatBtn").addEventListener("click", () => createNewChat());
     $("sendBtn").addEventListener("click", sendMessage);
 
-    // Install handlers
-    $("installAppBtn").addEventListener("click", triggerInstallPrompt);
-    $("headerInstallBtn").addEventListener("click", triggerInstallPrompt);
-    const directBtn = $("directInstallBtn");
-    if (directBtn) directBtn.addEventListener("click", triggerInstallPrompt);
+    // Direct Install triggers
+    $("installAppBtn").addEventListener("click", handleInstallClick);
+    $("headerInstallBtn").addEventListener("click", handleInstallClick);
+    $("directInstallBtn").addEventListener("click", handleInstallClick);
 
     $("chatInput").addEventListener("input", e => {
       e.target.style.height = "auto";
@@ -1364,12 +1365,11 @@
       });
     });
 
-    // Close sidebar on escape
     document.addEventListener("keydown", e => {
       if (e.key === "Escape") closeSidebar();
     });
 
-    // ---- Auth state ----
+    // ---- Auth state listener ----
     onAuthStateChanged(auth, async user => {
       state.user = user;
       updateAuthUI();
