@@ -15,13 +15,48 @@ const tones = {
   balanced: "Keep it natural, simple, and conversational."
 };
 
+
+function timestampToDate(value) {
+  if (!value) return null;
+
+  if (typeof value.toDate === "function") {
+    return value.toDate();
+  }
+
+  if (
+    typeof value === "object" &&
+    value._seconds !== undefined
+  ) {
+    return new Date(
+      value._seconds * 1000 +
+      Math.floor((value._nanoseconds || 0) / 1000000)
+    );
+  }
+
+  if (value instanceof Date) {
+    return value;
+  }
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime())
+    ? null
+    : date;
+}
+
 function getActiveSubscription(data) {
+  const expiry = timestampToDate(
+    data.subscriptionExpiry
+  );
+
   return (
     data.subscriptionStatus === "active" &&
-    data.subscriptionExpiry &&
-    new Date(data.subscriptionExpiry).getTime() > Date.now()
+    expiry &&
+    expiry.getTime() > Date.now()
   );
 }
+
+
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
