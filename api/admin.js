@@ -1,3 +1,38 @@
+function timestampToDate(value) {
+  if (!value) return null;
+
+  if (typeof value.toDate === "function") {
+    return value.toDate();
+  }
+
+  if (
+    typeof value === "object" &&
+    value._seconds !== undefined
+  ) {
+    return new Date(
+      value._seconds * 1000 +
+      Math.floor((value._nanoseconds || 0) / 1000000)
+    );
+  }
+
+  if (value instanceof Date) {
+    return value;
+  }
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime())
+    ? null
+    : date;
+}
+
+function timestampToISO(value) {
+  const date = timestampToDate(value);
+  return date ? date.toISOString() : null;
+}
+
+
+
 import { getDb, getFirebaseAdmin, requireUser, timestamp } from "./_firebase.js";
 
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
@@ -45,12 +80,12 @@ async function listUsers(db) {
       plan: data.plan || "free",
       planLabel: data.planLabel || "Free",
       subscriptionStatus: data.subscriptionStatus || "free",
-      subscriptionStart: data.subscriptionStart || null,
-      subscriptionExpiry: data.subscriptionExpiry || null,
+      subscriptionStart: timestampToISO(data.subscriptionStart),
+subscriptionExpiry: timestampToISO(data.subscriptionExpiry),
       freeTweetsUsed: data.freeTweetsUsed || 0,
       totalTweetsSubmitted: data.totalTweetsSubmitted || 0,
       totalRepliesGenerated: data.totalRepliesGenerated || 0,
-      createdAt: data.createdAt || null
+     createdAt: timestampToISO(data.createdAt)
     };
   });
 }
@@ -166,13 +201,17 @@ export default async function handler(req, res) {
         const now = new Date();
 
         let start = now;
-        if (
-          user.subscriptionStatus === "active" &&
-          user.subscriptionExpiry &&
-          new Date(user.subscriptionExpiry).getTime() > now.getTime()
-        ) {
-          start = new Date(user.subscriptionExpiry);
-        }
+      const currentExpiry = timestampToDate(
+  user.subscriptionExpiry
+);
+
+if (
+  user.subscriptionStatus === "active" &&
+  currentExpiry &&
+  currentExpiry.getTime() > now.getTime()
+) {
+  start = currentExpiry;
+}
 
         const expiry = addMonths(start, months);
 
