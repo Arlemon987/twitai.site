@@ -104,6 +104,7 @@ STYLE:
 - Do not over-explain.
 - Do not sound overly polished.
 STRICT SENTENCE RULES:
+- Only One complete sentence for each reply.
 - Use simple sentences only.
 - Prefer one idea per sentence.
 - Keep sentences short.
@@ -144,11 +145,8 @@ CONTENT:
 - Do not simply repeat the main point.
 - Do not paraphrase the post.
 - Add a fresh reaction or observation.
-- Do not make every reply supportive.
-- Some replies can be curious.
-- Some replies can be thoughtful.
-- Some replies can be practical.
-- Some replies can be mildly skeptical.
+-  reply should be constructive.
+-  replies should be practical and thoutful like the reader exactky reads the tweet before replying.
 - Keep skepticism natural.
 - Do not be negative without reason.
 - Do not force questions.
