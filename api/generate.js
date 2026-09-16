@@ -1,9 +1,11 @@
 // api/generate.js
 import OpenAI from 'openai';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
   try {
     const {
       tweet,
@@ -14,44 +16,41 @@ export default async function handler(req, res) {
       tag,
       language = 'auto'
     } = req.body;
+
     if (!tweet || !tweet.trim()) {
       return res.status(400).json({
         error: 'Tweet text is required.'
       });
     }
+
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY
     });
+
     // -----------------------------
     // Tone
     // -----------------------------
     const tones = {
-      technical:
-        'Mention one clear technical detail.',
-      analytical:
-        'Give one thoughtful observation.',
-      defi:
-        'Focus on one practical DeFi point.',
-      skeptical:
-        'Mention one thing worth watching.',
-      humor:
-        'Use light humor when it fits.',
-      supportive:
-        'Support one specific point.',
-      bullish_rational:
-        'Show calm confidence about one specific point.',
-      casual:
-        'Keep it light and conversational.'
+      technical: 'Mention one clear technical detail.',
+      analytical: 'Give one thoughtful observation.',
+      defi: 'Focus on one practical DeFi point.',
+      skeptical: 'Mention one thing worth watching.',
+      humor: 'Use light humor when it fits.',
+      supportive: 'Support one specific point.',
+      bullish_rational: 'Show calm confidence about one specific point.',
+      casual: 'Keep it light and conversational.'
     };
+
     const toneDirective =
-      tones[tone] ||
-      'Keep it natural, simple, and conversational.';
+      tones[tone] || 'Keep it natural, simple, and conversational.';
+
     // -----------------------------
     // Tag
     // -----------------------------
     const tagDirective = tag
       ? `Mention ${tag} in at most 1 reply. Only use it when relevant.`
       : 'Do not force mentions or tags.';
+
     // -----------------------------
     // Language
     // -----------------------------
@@ -59,12 +58,12 @@ export default async function handler(req, res) {
       language === 'auto'
         ? "Reply in the post's language. Use English if the language is unclear."
         : `Write strictly in ${language}.`;
+
     // -----------------------------
     // Style variation
     // -----------------------------
-    const styleSeed = Math.random()
-      .toString(36)
-      .slice(2, 10);
+    const styleSeed = Math.random().toString(36).slice(2, 10);
+
     const personas = [
       'a casual CT user',
       'a thoughtful reader',
@@ -73,10 +72,9 @@ export default async function handler(req, res) {
       'a practical observer',
       'a long-time crypto user'
     ];
-    const persona =
-      personas[
-        Math.floor(Math.random() * personas.length)
-      ];
+
+    const persona = personas[Math.floor(Math.random() * personas.length)];
+
     // -----------------------------
     // System prompt
     // -----------------------------
@@ -200,6 +198,7 @@ Remove unnecessary words.
 Keep one clear thought per sentence.
 Make the replies sound like real CT users.
 Never use the em dash character "—".`;
+
     // -----------------------------
     // User message
     // -----------------------------
@@ -209,6 +208,7 @@ Style seed: ${styleSeed}
 Voice hint: ${persona}
 Never mention the style seed.
 Never mention the voice hint.`;
+
     // -----------------------------
     // OpenAI Responses API
     // -----------------------------
@@ -229,32 +229,36 @@ Never mention the voice hint.`;
         effort: 'medium'
       }
     });
+
     const text = response.output_text || '';
+
     if (!text.trim()) {
-      throw new Error(
-        'OpenAI returned an empty response.'
-      );
+      throw new Error('OpenAI returned an empty response.');
     }
+
     // -----------------------------
     // Log usage
     // -----------------------------
     if (response.usage) {
-      console.log(
-        'Usage:',
-        JSON.stringify(response.usage)
-      );
+      console.log('Usage:', JSON.stringify(response.usage));
     }
+
+    // -----------------------------
+    // Extract replies for Shortcuts/Clients
+    // -----------------------------
+    const replies = [...text.matchAll(/```(?:[a-z]*\n)?([\s\S]*?)```/gi)]
+      .map((match) => match[1].trim())
+      .filter(Boolean);
+
     // -----------------------------
     // Response
     // -----------------------------
     return res.status(200).json({
-      text: text.trim()
+      text: text.trim(),
+      replies: replies.length > 0 ? replies : [text.trim()]
     });
   } catch (error) {
-    console.error(
-      'OpenAI API ERROR:',
-      error
-    );
+    console.error('OpenAI API ERROR:', error);
     return res.status(500).json({
       error:
         error?.message ||
