@@ -12,22 +12,19 @@
 
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z'/></svg>">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><rect width='24' height='24' rx='6' fill='%23090d16'/><path d='M18 4H6c-1.1 0-2 .9-2 2v14l3-3h11c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 7H8V9h2v2zm3 0h-2V9h2v2zm3 0h-2V9h2v2z' fill='%2338bdf8'/></svg>">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
 
-  <!-- PWA Web App Manifest for Direct 1-Click Install -->
-  <link rel="manifest" href='data:application/manifest+json,{"name":"Twit AI","short_name":"TwitAI","start_url":".","display":"standalone","background_color":"%23070a12","theme_color":"%23070a12","icons":[{"src":"data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%2338bdf8%22><path d=%22M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z%22/></svg>","sizes":"192x192 512x512","type":"image/svg+xml"}]}'>
+  <!-- PWA Web App Manifest -->
+  <link rel="manifest" href="/manifest.json">
 
-  <!-- Minimal Service Worker required for Chrome One-Click Install Detection -->
+  <!-- PWA Service Worker -->
   <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        const swBlob = new Blob([
-          "self.addEventListener('install', e => self.skipWaiting());\n" +
-          "self.addEventListener('activate', e => clients.claim());\n" +
-          // Fix Mobile Login: Let navigation requests bypass the Service Worker to prevent Firebase Auth Redirect issues
-          "self.addEventListener('fetch', e => { if (e.request.mode === 'navigate') return; e.respondWith(fetch(e.request)); });"
-        ], { type: 'text/javascript' });
-        navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js", { scope: "/" })
+          .then(reg => console.log("Twit AI service worker ready:", reg.scope))
+          .catch(err => console.warn("Twit AI service worker unavailable:", err));
       });
     }
   </script>
@@ -481,6 +478,11 @@
         class="btn-gradient w-full mt-4 py-3.5 rounded-xl text-white font-semibold text-sm active:scale-[0.97] transition">
         Subscribe
       </button>
+
+      <button id="mobileLogoutBtn"
+        class="w-full mt-3 py-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-500/20 font-semibold text-sm active:scale-[0.97] transition">
+        <i class="fa-solid fa-right-from-bracket mr-2"></i> Log out
+      </button>
     </div>
   </div>
 
@@ -676,27 +678,7 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const googleProvider = new GoogleAuthProvider();
-    googleProvider.setCustomParameters({ prompt: 'select_account' });
-
-    setPersistence(auth, browserLocalPersistence).catch(() => {});
-
-    // Catch redirect return on mobile
-    getRedirectResult(auth).then(async result => {
-      if (result && result.user) {
-        closeModal("loginModal");
-        showToast("Signed in successfully");
-        state.user = result.user;
-        updateAuthUI();
-        await refreshAccount();
-      }
-    }).catch(e => {
-      console.error("Redirect result error:", e);
-      const errEl = $("loginError");
-      if (errEl) {
-        errEl.textContent = e.message || "Sign-in failed. Please try again.";
-        errEl.classList.remove("hidden");
-      }
-    });
+    googleProvider.setCustomParameters({ prompt: "select_account" });
 
     const state = {
       chats: [],
@@ -719,39 +701,243 @@
 
     const $ = id => document.getElementById(id);
 
-    // ---- Direct 1-Click PWA Installation ----
+    // ------------------------------------------------------------
+    // Firebase Auth
+    // ------------------------------------------------------------
+    let authInitialized = false;
+    let redirectInProgress = false;
+
+    function isMobileDevice() {
+      return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    }
+
+    async function ensureAuthPersistence() {
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+      } catch (e) {
+        console.warn("Firebase persistence:", e);
+      }
+    }
+
+    async function loginGoogle() {
+      const btn = $("googleLoginBtn");
+      const icon = $("googleLoginIcon");
+      const text = $("googleLoginText");
+      const errorEl = $("loginError");
+
+      errorEl.classList.add("hidden");
+      errorEl.textContent = "";
+
+      btn.disabled = true;
+      icon.className = "fa-solid fa-circle-notch spin";
+      text.textContent = "Connecting...";
+
+      try {
+        await ensureAuthPersistence();
+
+        // Always use redirect on phones/tablets.
+        // This avoids popup blockers and popup lifecycle issues.
+        if (isMobileDevice()) {
+          redirectInProgress = true;
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        }
+
+        // Desktop uses popup for a faster flow.
+        const result = await signInWithPopup(auth, googleProvider);
+        if (result?.user) {
+          state.user = result.user;
+          updateAuthUI();
+          closeModal("loginModal");
+          showToast("Signed in successfully");
+          await refreshAccount();
+        }
+      } catch (err) {
+        console.error("Google sign-in error:", err);
+
+        // Desktop popup can be blocked. Retry with redirect.
+        if (!isMobileDevice() &&
+            ["auth/popup-blocked", "auth/popup-closed-by-user", "auth/cancelled-popup-request", "auth/internal-error"].includes(err?.code)) {
+          try {
+            redirectInProgress = true;
+            await signInWithRedirect(auth, googleProvider);
+            return;
+          } catch (redirectError) {
+            console.error("Google redirect fallback:", redirectError);
+            errorEl.textContent = redirectError?.message || "Google sign-in failed. Please try again.";
+            errorEl.classList.remove("hidden");
+          }
+        } else if (err?.code !== "auth/popup-closed-by-user") {
+          errorEl.textContent = err?.message || "Google sign-in failed. Please try again.";
+          errorEl.classList.remove("hidden");
+        }
+      } finally {
+        if (!redirectInProgress) {
+          btn.disabled = false;
+          icon.className = "fa-brands fa-google";
+          text.textContent = "Continue with Google";
+        }
+      }
+    }
+
+    async function logout() {
+      try {
+        await signOut(auth);
+        state.user = null;
+        state.profile = null;
+        updateAuthUI();
+        closeModal("accountModal");
+        closeModal("loginModal");
+        showToast("Logged out");
+      } catch (err) {
+        console.error("Logout error:", err);
+        showToast("Logout failed. Please try again.");
+      }
+    }
+
+    function updateAuthUI() {
+      const loggedIn = !!state.user;
+
+      if (loggedIn) {
+        $("loginBtn").classList.add("hidden");
+        $("userArea").classList.remove("hidden");
+        $("userArea").classList.add("flex");
+        updateAccountUI();
+      } else {
+        $("loginBtn").classList.remove("hidden");
+        $("userArea").classList.add("hidden");
+        $("userArea").classList.remove("flex");
+      }
+    }
+
+    // Firebase is the source of truth.
+    // Do not rely on getRedirectResult alone.
+    onAuthStateChanged(auth, async user => {
+      state.user = user;
+      authInitialized = true;
+
+      if (user) {
+        updateAuthUI();
+        closeModal("loginModal");
+
+        // Restore account data after Firebase confirms the session.
+        try {
+          await refreshAccount();
+        } catch (e) {
+          console.warn("Account restore:", e);
+        }
+
+        if (redirectInProgress) {
+          redirectInProgress = false;
+          showToast("Signed in successfully");
+        }
+      } else {
+        state.profile = null;
+        updateAuthUI();
+      }
+
+      const btn = $("googleLoginBtn");
+      if (btn && !redirectInProgress) {
+        btn.disabled = false;
+        $("googleLoginIcon").className = "fa-brands fa-google";
+        $("googleLoginText").textContent = "Continue with Google";
+      }
+    });
+
+    // Consume a pending redirect result as an additional safety step.
+    // onAuthStateChanged remains the authoritative state update.
+    (async () => {
+      try {
+        await ensureAuthPersistence();
+        const result = await getRedirectResult(auth);
+
+        if (result?.user) {
+          state.user = result.user;
+          updateAuthUI();
+          closeModal("loginModal");
+        }
+      } catch (e) {
+        console.error("Redirect result error:", e);
+        const errorEl = $("loginError");
+        if (errorEl && e?.code !== "auth/no-auth-event") {
+          errorEl.textContent = e?.message || "Google sign-in could not be completed.";
+          errorEl.classList.remove("hidden");
+        }
+      } finally {
+        redirectInProgress = false;
+      }
+    })();
+
+    // ------------------------------------------------------------
+    // PWA installation
+    // ------------------------------------------------------------
     let deferredPrompt = null;
 
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      $("installAppBtn").classList.add("ring-2", "ring-sky-400");
-      $("headerInstallBtn").classList.add("ring-2", "ring-sky-400");
+    function isStandalone() {
+      return window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true;
+    }
+
+    function isIOS() {
+      return /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    }
+
+    function isMac() {
+      return /Macintosh|Mac OS X/i.test(navigator.userAgent) && !isIOS();
+    }
+
+    function setInstallAvailable(available) {
+      ["installAppBtn", "headerInstallBtn"].forEach(id => {
+        const el = $(id);
+        if (!el) return;
+        el.classList.toggle("ring-2", available);
+        el.classList.toggle("ring-sky-400", available);
+      });
+    }
+
+    window.addEventListener("beforeinstallprompt", event => {
+      event.preventDefault();
+      deferredPrompt = event;
+      setInstallAvailable(true);
     });
 
     window.addEventListener("appinstalled", () => {
       deferredPrompt = null;
-      $("installAppBtn").classList.remove("ring-2", "ring-sky-400");
-      $("headerInstallBtn").classList.remove("ring-2", "ring-sky-400");
+      setInstallAvailable(false);
       closeModal("installModal");
       showToast("Twit AI app installed!");
+      localStorage.setItem("twitAiInstalled", "true");
     });
 
     async function handleInstallClick() {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === "accepted") {
-          showToast("Installing Twit AI...");
-          closeModal("installModal");
-        }
-        deferredPrompt = null;
-        $("installAppBtn").classList.remove("ring-2", "ring-sky-400");
-        $("headerInstallBtn").classList.remove("ring-2", "ring-sky-400");
-      } else {
-        // Fix Install Button: If browser blocks auto-prompt, guide the user instead of doing nothing
-        showToast("Use browser menu (⋮) or Share icon to 'Add to Home screen'");
+      if (isStandalone()) {
+        showToast("Twit AI is already installed");
+        return;
       }
+
+      // Chrome/Edge Android/PC: use the real native install prompt.
+      if (deferredPrompt) {
+        try {
+          deferredPrompt.prompt();
+          const choice = await deferredPrompt.userChoice;
+
+          if (choice?.outcome === "accepted") {
+            showToast("Installing Twit AI...");
+          }
+
+          deferredPrompt = null;
+          setInstallAvailable(false);
+        } catch (e) {
+          console.warn("Install prompt:", e);
+          deferredPrompt = null;
+        }
+        return;
+      }
+
+      // iPhone/iPad and browsers without beforeinstallprompt need
+      // the browser's Add to Home Screen flow.
+      openModal("installModal");
     }
 
     // ---- Local state ----
@@ -1100,72 +1286,6 @@
       }
     }
 
-    // ---- Mobile Reliable Google Auth ----
-    async function loginGoogle() {
-      $("loginError").classList.add("hidden");
-      const btn = $("googleLoginBtn");
-      const icon = $("googleLoginIcon");
-      const text = $("googleLoginText");
-
-      btn.disabled = true;
-      icon.className = "fa-solid fa-circle-notch spin";
-      text.textContent = "Connecting...";
-
-      try {
-        // First try popup - works instantly on PC and many mobile browsers
-        const res = await signInWithPopup(auth, googleProvider);
-        if (res && res.user) {
-          closeModal("loginModal");
-          showToast("Signed in successfully");
-        }
-      } catch (err) {
-        // Fallback to redirect when popup is blocked on mobile Safari / Chrome Android
-        const redirectFallbackCodes = [
-          'auth/popup-blocked',
-          'auth/cancelled-popup-request',
-          'auth/popup-closed-by-user',
-          'auth/internal-error'
-        ];
-        if (redirectFallbackCodes.includes(err.code) || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-          try {
-            await signInWithRedirect(auth, googleProvider);
-            return;
-          } catch (redErr) {
-            $("loginError").textContent = redErr.message || "Redirect failed.";
-            $("loginError").classList.remove("hidden");
-          }
-        } else {
-          $("loginError").textContent = err.message || "Google sign-in failed.";
-          $("loginError").classList.remove("hidden");
-        }
-      } finally {
-        btn.disabled = false;
-        icon.className = "fa-brands fa-google";
-        text.textContent = "Continue with Google";
-      }
-    }
-
-    async function logout() {
-      await signOut(auth);
-      state.user = null;
-      state.profile = null;
-      updateAuthUI();
-      showToast("Logged out");
-    }
-
-    function updateAuthUI() {
-      if (state.user) {
-        $("loginBtn").classList.add("hidden");
-        $("userArea").classList.remove("hidden");
-        $("userArea").classList.add("flex");
-        updateAccountUI();
-      } else {
-        $("loginBtn").classList.remove("hidden");
-        $("userArea").classList.add("hidden");
-        $("userArea").classList.remove("flex");
-      }
-    }
-
     // ---- Send message ----
     async function sendMessage() {
       if (state.isGenerating) return;
@@ -1286,6 +1406,7 @@
     $("loginBtn").addEventListener("click", () => openModal("loginModal"));
     $("googleLoginBtn").addEventListener("click", loginGoogle);
     $("logoutBtn").addEventListener("click", logout);
+    $("mobileLogoutBtn").addEventListener("click", logout);
     $("accountBtn").addEventListener("click", () => openModal("accountModal"));
     $("avatarBtn").addEventListener("click", () => openModal("accountModal"));
 
@@ -1393,6 +1514,11 @@
     // ---- Init ----
     loadLocalState();
     loadPaymentConfig();
+
+    if (isStandalone()) {
+      $("installAppBtn").classList.add("hidden");
+      $("headerInstallBtn").classList.add("hidden");
+    }
   </script>
 </body>
 </html>
