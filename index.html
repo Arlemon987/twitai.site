@@ -160,7 +160,7 @@
     }
     @keyframes shimmer {
       0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
+    100% { background-position: 200% 0; }
     }
 
     /* Slide in animation */
@@ -272,6 +272,14 @@
       <div id="chatList" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar smooth-scroll px-3 space-y-1"></div>
 
       <div class="p-3 border-t border-slate-800/70 space-y-2 bg-[#060910]/90 flex-shrink-0 safe-bottom">
+        <button id="installAppBtn"
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-sky-500/10 border border-sky-400/30 text-sky-300 hover:text-white hover:bg-sky-500/20 transition text-xs font-medium active:scale-[0.98]">
+          <span class="flex items-center gap-2.5">
+            <i class="fa-solid fa-download text-sky-400"></i> Install Twit AI App
+          </span>
+          <i class="fa-solid fa-chevron-right text-slate-500 text-[10px]"></i>
+        </button>
+
         <button id="configBtn"
           class="w-full flex items-center justify-between px-3 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-xs font-medium active:scale-[0.98]">
           <span class="flex items-center gap-2.5">
@@ -279,6 +287,14 @@
           </span>
           <i class="fa-solid fa-gear text-slate-500 text-xs"></i>
         </button>
+
+        <a href="mailto:admin@twitai.app"
+          class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/40 transition text-xs font-medium">
+          <span class="flex items-center gap-2">
+            <i class="fa-regular fa-envelope text-sky-400"></i> Contact Support
+          </span>
+          <span class="text-[10px] text-slate-500 truncate">admin@twitai.app</span>
+        </a>
 
         <a href="https://x.com/lemonar777" target="_blank" rel="noopener noreferrer"
           class="flex items-center justify-between px-3 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-sky-500/40 text-slate-300 hover:text-white transition">
@@ -310,6 +326,10 @@
         </div>
 
         <div class="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+          <button id="headerInstallBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-sky-300 bg-sky-500/10 border border-sky-400/30 hover:bg-sky-500/20 transition">
+            <i class="fa-solid fa-arrow-down-to-line"></i> <span class="hidden xs:inline">Install App</span>
+          </button>
+
           <a href="https://x.com/lemonar777" target="_blank" rel="noopener noreferrer"
             class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-400 bg-slate-800/70 hover:text-white border border-slate-700/60 transition">
             <i class="fa-brands fa-x-twitter"></i> @lemonar777
@@ -373,7 +393,7 @@
           </div>
 
           <div class="hidden sm:flex items-center justify-between text-[10px] text-slate-500 mt-2 px-1">
-            <span>Twit AI • This site is for Generating Tweet Reply</span>
+            <span>Twit AI • This site is for Generating Tweet Reply • <a href="mailto:admin@twitai.app" class="hover:text-slate-300 transition">admin@twitai.app</a></span>
             <span>Developed by @lemonar777</span>
           </div>
         </div>
@@ -475,6 +495,77 @@
 
       <p id="paymentMessage" class="text-xs mt-3 hidden"></p>
     </div>
+   </div>
+
+  <!-- Install App modal -->
+  <div id="installModal" class="fixed inset-0 modal-backdrop z-[100] hidden items-center justify-center p-4">
+    <div class="glass w-full max-w-md rounded-3xl p-5 sm:p-6 relative max-h-[92dvh] overflow-y-auto custom-scrollbar scale-in">
+      <button class="modalClose absolute top-4 right-4 w-9 h-9 rounded-full hover:bg-slate-800 text-slate-500 hover:text-white flex items-center justify-center transition" data-modal="installModal">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white text-lg">
+          <i class="fa-solid fa-cloud-arrow-down"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-white">Install Twit AI App</h2>
+          <p class="text-xs text-slate-400">Add to your Home Screen or Desktop</p>
+        </div>
+      </div>
+
+      <div class="mt-5 space-y-4">
+        <!-- Direct Chrome/Android Install Button (when prompt available) -->
+        <div id="directInstallWrapper" class="hidden">
+          <button id="directInstallBtn" class="btn-gradient w-full py-3.5 rounded-xl text-white font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.97] transition shadow-lg shadow-sky-500/20">
+            <i class="fa-brands fa-chrome"></i> Install Automatically (Chrome / Android / PC)
+          </button>
+          <div class="flex items-center gap-2 my-4 text-slate-600">
+            <hr class="flex-1 border-slate-800">
+            <span class="text-[10px] uppercase font-bold text-slate-500">Manual Guide</span>
+            <hr class="flex-1 border-slate-800">
+          </div>
+        </div>
+
+        <!-- Chrome on PC & Android -->
+        <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+          <div class="flex items-center gap-2 text-xs font-semibold text-sky-400 mb-2">
+            <i class="fa-brands fa-chrome"></i> Chrome (PC & Android)
+          </div>
+          <ul class="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
+            <li><strong>PC / Windows:</strong> Look for the <i class="fa-solid fa-circle-down text-sky-400"></i> install icon on the right side of the address bar, or click Chrome menu <i class="fa-solid fa-ellipsis-vertical text-slate-400"></i> &gt; <strong>Install Twit AI...</strong></li>
+            <li><strong>Android:</strong> Tap the Chrome menu <i class="fa-solid fa-ellipsis-vertical text-slate-400"></i> at the top right &gt; tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
+          </ul>
+        </div>
+
+        <!-- iOS (iPhone & iPad) -->
+        <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+          <div class="flex items-center gap-2 text-xs font-semibold text-slate-200 mb-2">
+            <i class="fa-brands fa-apple"></i> iOS (iPhone & iPad - Safari)
+          </div>
+          <ol class="text-xs text-slate-300 space-y-1.5 list-decimal list-inside">
+            <li>Open in <strong>Safari</strong> browser.</li>
+            <li>Tap the <strong>Share</strong> button <i class="fa-solid fa-arrow-up-from-bracket text-sky-400"></i> at the bottom.</li>
+            <li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>
+            <li>Tap <strong>Add</strong> in the top right.</li>
+          </ol>
+        </div>
+
+        <!-- macOS -->
+        <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+          <div class="flex items-center gap-2 text-xs font-semibold text-slate-200 mb-2">
+            <i class="fa-solid fa-laptop"></i> Mac (Safari & Chrome)
+          </div>
+          <ul class="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
+            <li><strong>Safari (macOS Sonoma+):</strong> Click <strong>File</strong> in the top menu bar &gt; select <strong>Add to Dock</strong>.</li>
+            <li><strong>Chrome on Mac:</strong> Click the install icon <i class="fa-solid fa-circle-down text-sky-400"></i> in the URL bar, or click Chrome menu <i class="fa-solid fa-ellipsis-vertical text-slate-400"></i> &gt; <strong>Save and Share</strong> &gt; <strong>Install Twit AI...</strong></li>
+          </ul>
+        </div>
+
+        <div class="text-[11px] text-slate-500 text-center">
+          Need help? Reach out at <a href="mailto:admin@twitai.app" class="text-sky-400 hover:underline">admin@twitai.app</a>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Generation rules -->
@@ -510,7 +601,7 @@
             <span class="text-slate-500 text-xs">to</span>
             <input id="maxWordsInput" type="number" min="10" max="60" value="18"
               class="w-full px-3.5 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white text-center outline-none focus:border-sky-500 transition">
-          </div>
+        </div>
         </div>
 
         <div>
@@ -609,6 +700,38 @@
     };
 
     const $ = id => document.getElementById(id);
+
+    // ---- PWA Install Prompt Handler ----
+    let deferredPrompt = null;
+
+    window.addEventListener("beforeinstallprompt", e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const wrap = $("directInstallWrapper");
+      if (wrap) wrap.classList.remove("hidden");
+    });
+
+    window.addEventListener("appinstalled", () => {
+      deferredPrompt = null;
+      const wrap = $("directInstallWrapper");
+      if (wrap) wrap.classList.add("hidden");
+      showToast("Twit AI app installed successfully!");
+    });
+
+    async function triggerInstallPrompt() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === "accepted") {
+          showToast("Installing Twit AI...");
+        }
+        deferredPrompt = null;
+        const wrap = $("directInstallWrapper");
+        if (wrap) wrap.classList.add("hidden");
+      } else {
+        openModal("installModal");
+      }
+    }
 
     // ---- Local state ----
     function loadLocalState() {
@@ -1161,6 +1284,12 @@
 
     $("newChatBtn").addEventListener("click", () => createNewChat());
     $("sendBtn").addEventListener("click", sendMessage);
+
+    // Install handlers
+    $("installAppBtn").addEventListener("click", triggerInstallPrompt);
+    $("headerInstallBtn").addEventListener("click", triggerInstallPrompt);
+    const directBtn = $("directInstallBtn");
+    if (directBtn) directBtn.addEventListener("click", triggerInstallPrompt);
 
     $("chatInput").addEventListener("input", e => {
       e.target.style.height = "auto";
