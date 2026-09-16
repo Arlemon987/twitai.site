@@ -115,7 +115,7 @@ TONE: ${toneDirective}
         { role: 'user', content: userMessage }
       ],
       max_output_tokens: 2000,
-      reasoning: { effort: 'minimal' }
+      reasoning: { effort: 'medium' }
     });
 
     const text = response.output_text || '';
