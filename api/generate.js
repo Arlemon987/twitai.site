@@ -293,7 +293,7 @@ Never mention the style seed.
 Never mention the voice hint.`;
 
     const response = await openai.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-5.6-luna",
+      model: process.env.OPENAI_MODEL,
       input: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage }
