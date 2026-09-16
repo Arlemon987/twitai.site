@@ -200,10 +200,10 @@ export default async function handler(req, res) {
   try {
     const {
       tweet,
-      minWords = 10,
-      maxWords = 15,
-      replyCount = 5,
-      tone = "casual",
+      minWords = 9,
+      maxWords = 12,
+      replyCount = 3,
+      tone = "friendly casual",
       tag = "",
       language = "auto"
     } = req.body || {};
