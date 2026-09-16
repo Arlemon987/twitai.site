@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Twit AI — Generating Tweet Reply</title>
   <meta name="theme-color" content="#070a12">
+
+  <!-- Twit AI SVG Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23090d16'/%3E%3Cpath d='M8 28L14 24H30C32.2 24 34 22.2 34 20V12C34 9.8 32.2 8 30 8H10C7.8 8 6 9.8 6 12V26C6 27.1 6.9 28 8 28Z' stroke='%2338bdf8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3Cpath d='M14 16L18 20M18 16L14 20' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='25' cy='18' r='2.5' fill='%23818cf8'/%3E%3C/svg%3E">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -514,7 +518,6 @@
     }
 
     function sanitizeTweetInput(raw) {
-      // Filter out links if user accidentally pastes URLs
       return raw.replace(/https?:\/\/\S+/gi, '').trim();
     }
 
