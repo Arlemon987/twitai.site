@@ -389,19 +389,19 @@ Return ONLY the ${replyCount} code blocks.`;
     // -----------------------------
 
     const response = await openai.responses.create({
-      model: 'gpt-5.4-mini',
-      input: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: tweet.trim()
-        }
-      ],
-      max_output_tokens: 2000
-    });
+  model: 'gpt-5.4-mini-2026-03-17',
+  input: [
+    {
+      role: 'system',
+      content: systemPrompt
+    },
+    {
+      role: 'user',
+      content: tweet.trim()
+    }
+  ],
+  max_output_tokens: 2000
+});
 
     const text = response.output_text || '';
 
