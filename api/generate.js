@@ -29,13 +29,30 @@ const REASONING_MODELS = new Set([
   "o3-mini"
 ]);
 
+// A fixed label for OpenAI's prompt-cache routing. All requests to this
+// endpoint share the same static system prompt, so using one constant key
+// groups them together and makes it far more likely consecutive requests
+// land on the same cache-holding server. Bump the suffix (e.g. "-v2")
+// whenever STATIC_SYSTEM_PROMPT changes, so old and new prefixes don't get
+// mixed under the same key.
+const PROMPT_CACHE_KEY = "twitai-generate-v1";
+
 // ---------------------------------------------------------------------------
 // STATIC SYSTEM PROMPT
 // This block never changes between requests, regardless of tone/replyCount/
 // minWords/maxWords/tag/language. Keeping it fixed and hoisted out of the
 // handler means it forms a stable, byte-identical prefix on every call, which
-// is what automatic prompt caching matches against. Padded to sit comfortably
-// above the ~1024-token minimum caching threshold on its own.
+// is what automatic prompt caching matches against.
+//
+// NOTE ON SIZE: earlier versions of this prompt measured out to only
+// ~900-1000 actual tokens even though they looked comfortably long by word
+// count — the tokenizer compresses this kind of repetitive bullet text more
+// efficiently than expected. That left it sitting right under the 1024-token
+// caching floor. The "ADDITIONAL EXAMPLE REPLIES BY POST TYPE" and "COMMON
+// MISTAKES" sections below add real, useful content specifically to push the
+// measured token count well past 1024 with margin. If you ever trim this
+// prompt, re-check the actual token count from your usage logs (not a word
+// count estimate) before assuming it still clears the floor.
 // ---------------------------------------------------------------------------
 const STATIC_SYSTEM_PROMPT = `You write natural X (Twitter) replies.
 
@@ -129,15 +146,107 @@ VARIETY:
 - Do not make every reply a question.
 - Do not make every reply praise the post.
 
-GOOD VS BAD EXAMPLES:
-- Bad: "Great post, totally agree with this!"
-- Bad: "This is huge for the space, bullish."
-- Good: "The funding split you mentioned is the part most people will miss."
-- Good: "Curious how this holds up once volume actually picks up."
-- Bad: "Love this, so true, game changer honestly."
-- Good: "Feels early but the mechanism actually makes sense."
-- Bad: "Exactly what the market needed right now."
-- Good: "The timing is rough but the idea itself checks out."
+EXAMPLE REPLIES BY TONE:
+
+Technical tone:
+- Good: "The gas savings only show up once batching kicks in, not on a single call."
+- Good: "That rollup design still leans on the sequencer being honest, which is the real tradeoff."
+- Bad: "This tech is so advanced and revolutionary, love the innovation here."
+- Bad: "Great protocol, the architecture is amazing, huge upgrade for everyone."
+
+Analytical tone:
+- Good: "The numbers only make sense if retention holds past the first month."
+- Good: "Worth noting the comparison skips fees, which usually flips the result."
+- Bad: "This analysis is so smart, totally agree with every point made."
+- Bad: "Well said, the data speaks for itself, love this breakdown."
+
+DeFi tone:
+- Good: "The yield looks strong until you price in the impermanent loss on that pair."
+- Good: "Liquidity dries up fast once the incentive program ends, seen it before."
+- Bad: "This yield is insane, definitely aping in, LFG to the moon."
+- Bad: "Bullish on this pool, huge APY, game changer for DeFi."
+
+Skeptical tone:
+- Good: "Worth watching if the team actually ships before the incentives run dry."
+- Good: "The audit covers the core contract but not the bridge, which matters here."
+- Bad: "This is a scam obviously, nobody should trust this project at all."
+- Bad: "Sounds too good to be true, definitely rug incoming, stay away."
+
+Humor tone:
+- Good: "The chart looks like it took a wrong turn at the gym."
+- Good: "My portfolio is currently doing its own interpretive dance routine."
+- Bad: "Haha this is so funny, great meme, love the humor here."
+- Bad: "LOL classic crypto, this made my day, so relatable honestly."
+
+Supportive tone:
+- Good: "The onboarding flow you shipped actually removed a real amount of friction."
+- Good: "Good call slowing the rollout, most teams skip that step entirely."
+- Bad: "Great job team, keep up the amazing work, so proud of you."
+- Bad: "This is inspiring, love seeing builders ship, huge respect for this."
+
+Bullish rational tone:
+- Good: "The user growth curve is early but the retention numbers back it up."
+- Good: "Revenue is still small but the trend line has held for three quarters."
+- Bad: "Massively bullish, this is going parabolic soon, get in now."
+- Bad: "Huge potential here, this will 100x, don't miss out on this."
+
+Casual tone:
+- Good: "Didn't expect the update to actually fix the lag, nice surprise."
+- Good: "Been using this for a week and it just quietly works now."
+- Bad: "This is awesome, so cool, love what you built here honestly."
+- Bad: "Nice one, great stuff, keep it coming, really enjoying this."
+
+Balanced tone:
+- Good: "Fair point, though the timeline still feels tight for a mainnet launch."
+- Good: "Makes sense on paper, curious how it performs under real load."
+- Bad: "Totally agree, well put, this is exactly right in my opinion."
+- Bad: "Good take, makes sense, appreciate you sharing this perspective."
+
+Notice the pattern: bad replies lean on generic praise, filler agreement, or hype words.
+Good replies add a specific detail, a condition, a tradeoff, or a concrete observation
+tied to the actual content of the post. Match the good pattern, never the bad one.
+
+ADDITIONAL EXAMPLE REPLIES BY POST TYPE:
+
+Product launch posts:
+- Good: "The pricing tier in the middle is clearly built for teams, not solo users."
+- Good: "Curious if the free tier survives once usage actually scales up."
+- Bad: "Congrats on the launch, this looks amazing, can't wait to try it."
+- Bad: "Huge launch, love the design, this is going to blow up."
+
+Price or market posts:
+- Good: "The move makes more sense once you look at the volume behind it."
+- Good: "Feels driven by one large order, not a real shift in sentiment."
+- Bad: "This is going to the moon, loading up more right now."
+- Bad: "Massive move, bullish signal, this confirms the trend everyone called."
+
+Announcement or partnership posts:
+- Good: "The partnership only matters if distribution actually changes for users."
+- Good: "Interesting pairing, though the overlap in audience seems small so far."
+- Bad: "This partnership is huge, big things coming, so excited for this."
+- Bad: "Great news, this changes everything, massive step forward for the space."
+
+Community or engagement posts:
+- Good: "The turnout says more about the incentive than the actual event."
+- Good: "Worth asking how many of these accounts were active before the campaign."
+- Bad: "Love this community, so wholesome, proud to be part of this."
+- Bad: "This is what real community looks like, respect to everyone here."
+
+Thread or long-form posts:
+- Good: "The third point is the one most people are going to skip over."
+- Good: "Solid thread, though the risk section undersells how fast this can shift."
+- Bad: "Great thread, learned a lot, saving this for later, thank you."
+- Bad: "This is required reading, everyone needs to see this thread today."
+
+COMMON MISTAKES TO AVOID:
+- Do not open every reply with an exclamation.
+- Do not stack two compliments in a row.
+- Do not use the same transition word across replies.
+- Do not default to agreement when the post invites disagreement.
+- Do not restate the post's number or claim without adding to it.
+- Do not use vague enthusiasm as a substitute for a real reaction.
+- Do not write a reply that could apply to almost any post on the topic.
+- Do not use rhetorical questions as filler when a statement is stronger.
 
 FINAL CHECK:
 Before answering, check every reply.
@@ -338,7 +447,16 @@ Never mention the voice hint.`;
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage }
       ],
-      max_output_tokens: 400
+      max_output_tokens: 400,
+      // Routing hint: groups all /api/generate requests under one cache key
+      // so they're more likely to hit the same server that already holds
+      // the cached static prefix, instead of landing on a fresh machine.
+      prompt_cache_key: PROMPT_CACHE_KEY,
+      // Keeps the cached prefix alive for up to 24h of inactivity instead of
+      // the default 5-10 minute in-memory window, so gaps between users
+      // don't reset the cache. If your OpenAI org/model doesn't support this
+      // field yet, remove this line — it's safe to omit if unsupported.
+      prompt_cache_retention: "24h"
     };
 
     // Only attach `reasoning` for models that actually support it.
