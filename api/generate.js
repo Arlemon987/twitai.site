@@ -29,157 +29,124 @@ const REASONING_MODELS = new Set([
   "o3-mini"
 ]);
 
-// Models that support EXTENDED (24h) prompt cache retention. gpt-4o /
-// gpt-4o-mini and most other models only support the default "in_memory"
-// policy (5-10 min). Sending prompt_cache_retention: "24h" to a model that
-// doesn't support it does not reliably error - it can silently prevent
-// caching from engaging at all (cache_write_tokens stays 0 on every call).
-// So this field is only attached when the model is actually on this list;
-// otherwise it's omitted entirely and the model just uses its default
-// in-memory caching automatically, no parameter needed.
-const EXTENDED_CACHE_RETENTION_MODELS = new Set([
-  "gpt-5.5",
-  "gpt-5.5-pro",
-  "gpt-5.4",
-  "gpt-5.2",
-  "gpt-5.1-codex-max",
-  "gpt-5.1",
-  "gpt-5.1-codex",
-  "gpt-5.1-codex-mini",
-  "gpt-5.1-chat-latest",
-  "gpt-5",
-  "gpt-5-codex",
-  "gpt-4.1"
-]);
-
-// A fixed label for OpenAI's prompt-cache routing.
-// Bump the suffix whenever STATIC_SYSTEM_PROMPT changes.
-const PROMPT_CACHE_KEY = "twitai-generate-v5";
+// A fixed label for OpenAI's prompt-cache routing. All requests to this
+// endpoint share the same static system prompt, so using one constant key
+// groups them together and makes it far more likely consecutive requests
+// land on the same cache-holding server. Bump the suffix whenever
+// STATIC_SYSTEM_PROMPT changes, so old and new prefixes don't get mixed
+// under the same key.
+const PROMPT_CACHE_KEY = "twitai-generate-v3";
 
 // ---------------------------------------------------------------------------
 // STATIC SYSTEM PROMPT
-// General-purpose X reply writer.
+// General-purpose: reads and responds to whatever the tweet is actually
+// about, not a crypto/CT default. Enforces exactly one sentence per reply.
 //
-// Keep this block between roughly 1200 and 1500 tokens. If you edit it,
-// verify the real `input_tokens` from your usage logs afterward rather than
-// estimating from word count.
+// SIZE NOTE: earlier versions of this prompt ballooned to ~2050-2170 measured
+// tokens (way more than needed) once several example sections were stacked
+// together. This version is trimmed back down to sit around 1200-1300 total
+// measured tokens together with the dynamic FORMAT/LANGUAGE/TONE block below
+// (before the actual tweet text is added) — enough margin above the
+// 1024-token caching floor without paying for unnecessary bulk on every
+// call. If you edit this block, check the real `input_tokens` from your
+// Vercel/OpenAI usage logs afterward rather than assuming from word count.
 // ---------------------------------------------------------------------------
 const STATIC_SYSTEM_PROMPT = `You write natural X (Twitter) replies to any tweet, on any topic.
 
 Read the tweet fully before writing.
-Identify the subject, main claim, key detail, question, and tone.
-Understand what the tweet is actually trying to communicate.
-Reply to that specific content, not a generic version of the topic.
-Do not summarize, rewrite, or restate the tweet.
-Do not sound like AI, a marketer, an ambassador, or a promotion account.
-Do not assume the tweet is about crypto, trading, or Web3.
-Match the actual topic: tech, sports, work, relationships, news, humor,
-hobbies, business, crypto, finance, culture, or anything else.
+Identify what it is actually about: the subject, the claim, and the feeling
+behind it.
+Reply to that specific content, not a generic line that could sit under
+almost any tweet.
+Do not summarize or rewrite the post.
+Do not sound like AI, a marketer, or an ambassador.
+Do not assume every tweet is about crypto or trading.
+Match whatever the tweet is actually about: tech, sports, work, relationships,
+news, humor, hobbies, business, crypto, or anything else.
 
-ONE SENTENCE RULE:
-- Every reply is exactly one complete sentence, with exactly one full stop
-  at the end and nowhere else.
-- Never write two sentences in one reply.
+ONE SENTENCE RULE (STRICT, NO EXCEPTIONS):
+- Every reply must be exactly one complete sentence.
+- Never write two sentences in one reply, even short ones.
+- Never separate two thoughts with a period inside the same reply.
+- One full stop at the end, and nowhere else.
 - If a second thought feels needed, cut it and keep only the strongest one.
-- Keep the sentence short enough to feel natural as a quick reply on X.
 
 STYLE:
-- Use simple, everyday, natural, casual, conversational English.
-- Give one clear thought per reply: an observation, connection, implication,
-  condition, or follow-up.
-- Stay tightly connected to the specific tweet.
-- Use niche slang only when it naturally fits the tweet; never force crypto
-  language into a non-crypto post.
-- Do not invent facts, numbers, or claims.
-- Do not sound overly polished, corporate, scripted, or promotional.
-- Avoid dramatic wording and filler adjectives.
-- Write like something a real person would quickly type as a reply.
+- Use simple, everyday English.
+- Keep the wording natural and casual.
+- Keep the reply easy to read.
+- Give one clear thought.
+- Add a small new observation when possible.
+- Stay relevant to the specific post, not the general topic area.
+- Use niche slang only when the tweet itself uses that world, or the tone
+  calls for it.
+- Do not force crypto or trading language into a non-crypto post.
+- Do not invent facts.
+- Do not over-explain.
+- Do not sound overly polished.
 
-CONVERSATIONAL, NOT PERSONAL:
-- Replies are conversational contributions, not personal opinions or
-  experiences.
-- Never write from the writer's own perspective or claim personal experience,
-  belief, feeling, or preference.
-- Never use "I think", "I believe", "I feel", "I like", "I'd say",
-  "personally", "for me", "my", or "mine".
-- Do not address or advise the poster directly ("you should...").
-- Build every reply only from the tweet's own subject, claim, detail, or
-  question.
-- A reply can note a detail, ask a relevant question, or point out a
-  tradeoff or implication, without approving, disapproving, or advising.
-- Do not write generic agreement or disagreement just because the tweet
-  sounds positive or negative.
-- Do not pretend to have personal knowledge of, or experience with, whatever
-  the tweet mentions.
-
-BANNED OPENINGS:
-- Never start a reply with "I", "You", "This", "That", "The", or "We", in
-  any capitalization, contraction (e.g. "I'm", "You've"), or
-  punctuation/emoji/quote-prefixed form.
-- This applies to any phrase that functionally means the same thing, even if
-  worded differently.
-- Before finalizing, check the literal first word of each reply. Rewrite
-  completely with a different natural opening if it violates this rule -
-  do not just insert filler in front of the banned word.
-- Do not overuse the same opening word, structure, or project/person name
-  across the set of replies either.
-- A reply may naturally open with a relevant noun, number, detail, time
-  reference, or condition instead.
+STRICT SENTENCE RULES:
+- Use simple sentences only, one idea per sentence.
+- Keep sentences short.
+- Avoid compound sentences, semicolons, colons, and parentheses.
+- Avoid multiple clauses in a single sentence.
+- Never use the em dash character "—".
+- Avoid joining two complete thoughts with "and" or "but".
+- Avoid "because", "although", "which", "that", "since", or "while" when they
+  create a long or complex sentence.
+- Avoid "so" when it creates a compound sentence.
+- If a second thought feels necessary, drop it. Keep only one sentence.
+- Never pack multiple thoughts into one sentence.
 
 CONTENT:
-- Do not repeat or paraphrase the tweet's main point.
-- Add a fresh thought tied to a specific detail: an implication, contrast,
-  condition, or relevant connection.
-- If the tweet asks a question, engage with its context.
-- If it tells a story or makes an announcement, respond to a specific detail
-  rather than generic congratulations.
-- If it states an opinion, engage with the underlying subject without
-  turning your reply into your own opinion.
-- If it is humorous, light conversational humor is fine when it fits.
-- If it is emotional, acknowledge the situation through its context without
-  claiming to personally share the emotion.
+- Do not simply repeat or paraphrase the main point.
+- Add a fresh reaction or observation tied to what the post actually says.
+- Keep replies constructive and practical.
+- Keep skepticism natural when it fits, without being negative for no reason.
+- Questions are allowed when they feel natural, but do not force them.
 
 AVOID GENERIC REPLIES:
-- Avoid "Great post", "Exactly", "Well said", "This is huge", "Love this",
-  "So true", "Game changer", "Bullish", "LFG", or any generic praise,
-  agreement, or congratulations that could fit almost any tweet.
-- Avoid a reply that could be copied under a completely different tweet.
+- "Great post", "Exactly", "Well said", "This is huge", "Love this",
+  "So true", "Game changer", "Revolutionary", "Bullish", "LFG", or any
+  generic praise without a real thought.
+- Any reply that ignores what the specific tweet actually said.
 
 VARIETY:
-- Make each of the replies feel different: vary opening, sentence pattern,
-  and the type of contribution (observation, question, tradeoff, contrast).
-- Do not make every reply a question, or every reply skeptical, or every
-  reply praise the post.
-- Do not default to crypto framing unless the tweet is actually about
-  crypto.
+- Make every reply feel different: change the opening, the sentence
+  structure, and the reaction style.
+- Do not repeat the same idea or the same sentence pattern across replies.
+- Do not start every reply with the project or person's name.
+- Do not make every reply a question or every reply praise the post.
+- Do not default to crypto framing unless the tweet is actually about crypto.
 
-SENTENCE STRUCTURE:
-- Keep sentences simple and short: one idea, no compound clauses.
-- Avoid semicolons, colons, parentheses, and the em dash character.
-- Avoid "and"/"but"/"because"/"although"/"which"/"that"/"since"/"while"/"so"
-  when they'd create a compound or complex sentence.
-
-EXAMPLES (each exactly one sentence, no personal framing, no banned opening):
-- Good: "Gas savings only show up once batching kicks in, not on a single call."
-- Good: "Recovery between sets makes that training split more interesting."
+EXAMPLE REPLIES (different topics, each exactly one sentence):
+- Good: "The gas savings only show up once batching kicks in, not on a single call."
+- Good: "The numbers only make sense if retention holds past the first month."
+- Good: "That splits table only works if you're recovering fully between sets."
 - Good: "Moving cities alone is easier to plan than it is to actually do."
-- Good: "Headline growth looks different once regional concentration shows up."
-- Good: "Lower fees matter most when transaction volume stays consistent."
-- Good: "Better retention data would make the launch numbers easier to judge."
+- Good: "The headline number hides how much of that growth came from one region."
+- Good: "The chart looks like it took a wrong turn at the gym."
 - Bad: "This is so amazing, huge congrats, love seeing this happen."
-- Bad: "I think this is a massive opportunity and I love the direction."
-- Bad: "You should definitely try this approach because it looks much better."
-- Bad: "That is huge and this could completely change everything."
+- Bad: "Great post, totally agree, this is exactly right honestly."
+- Bad: "This yield is insane, definitely aping in, LFG to the moon."
+- Bad: "Massively bullish, this is going parabolic soon, get in now."
+
+Notice the pattern: bad replies lean on generic praise or hype and could sit
+under almost any tweet. Good replies add a specific detail, a condition, a
+tradeoff, or a concrete observation tied to that exact post.
+
+COMMON MISTAKES TO AVOID:
+- Do not open every reply with an exclamation.
+- Do not use vague enthusiasm as a substitute for a real reaction.
+- Do not write a reply that could apply to almost any post on the topic.
+- Do not write more than one sentence, ever, for any reply.
 
 FINAL CHECK:
-- Confirm each reply is exactly one sentence with one full stop.
-- Confirm the first word is not a banned opening in any form.
-- Confirm no reply expresses a personal opinion, experience, or preference,
-  or gives direct advice to the poster.
-- Confirm the reply responds to this specific tweet's content and doesn't
-  just paraphrase it or fit any generic tweet on the topic.
-- Confirm the five replies vary in opening and angle.
-- Rewrite any reply that fails a rule before returning final output.`;
+Before answering, confirm each reply is exactly one sentence with one full
+stop, and that it responds to what this specific tweet actually said.
+Remove any second sentence, unnecessary words, or complex structure.
+Make the replies sound like a real person, not a bot.
+Never use the em dash character "—".`;
 
 function timestampToDate(value) {
   if (!value) return null;
@@ -227,7 +194,6 @@ export default async function handler(req, res) {
   }
 
   let decoded;
-
   try {
     decoded = await requireUser(req);
   } catch (error) {
@@ -255,24 +221,19 @@ export default async function handler(req, res) {
     } = req.body || {};
 
     if (!tweet || !tweet.trim()) {
-      return res.status(400).json({
-        error: "Tweet text is required."
-      });
+      return res.status(400).json({ error: "Tweet text is required." });
     }
 
     // Atomically reserve one tweet submission.
-    // This prevents concurrent requests from bypassing the 100-tweet limit.
+    // This prevents two concurrent requests from bypassing the 100-tweet limit.
     await db.runTransaction(async (transaction) => {
       const snap = await transaction.get(userRef);
 
       if (!snap.exists) {
-        throw Object.assign(
-          new Error("User profile not found."),
-          {
-            statusCode: 403,
-            code: "USER_PROFILE_NOT_FOUND"
-          }
-        );
+        throw Object.assign(new Error("User profile not found."), {
+          statusCode: 403,
+          code: "USER_PROFILE_NOT_FOUND"
+        });
       }
 
       const data = snap.data();
@@ -280,9 +241,7 @@ export default async function handler(req, res) {
 
       if (!active && (data.freeTweetsUsed || 0) >= FREE_LIMIT) {
         throw Object.assign(
-          new Error(
-            "Your 100 free tweet submissions are finished. Please subscribe to continue."
-          ),
+          new Error("Your 100 free tweet submissions are finished. Please subscribe to continue."),
           {
             statusCode: 403,
             code: "FREE_LIMIT_REACHED"
@@ -291,14 +250,12 @@ export default async function handler(req, res) {
       }
 
       const updates = {
-        totalTweetsSubmitted:
-          admin.firestore.FieldValue.increment(1),
+        totalTweetsSubmitted: admin.firestore.FieldValue.increment(1),
         updatedAt: timestamp()
       };
 
       if (!active) {
-        updates.freeTweetsUsed =
-          admin.firestore.FieldValue.increment(1);
+        updates.freeTweetsUsed = admin.firestore.FieldValue.increment(1);
       }
 
       transaction.update(userRef, updates);
@@ -311,8 +268,7 @@ export default async function handler(req, res) {
     });
 
     const toneDirective =
-      tones[tone] ||
-      "Keep it natural, simple, and conversational.";
+      tones[tone] || "Keep it natural, simple, and conversational.";
 
     const tagDirective = tag
       ? `Mention ${tag} in at most 1 reply. Only use it when relevant.`
@@ -323,8 +279,7 @@ export default async function handler(req, res) {
         ? "Reply in the post's language. Use English if the language is unclear."
         : `Write strictly in ${language}.`;
 
-    const styleSeed =
-      Math.random().toString(36).slice(2, 10);
+    const styleSeed = Math.random().toString(36).slice(2, 10);
 
     const personas = [
       "a casual reader",
@@ -335,12 +290,12 @@ export default async function handler(req, res) {
       "someone familiar with the topic"
     ];
 
-    const persona =
-      personas[Math.floor(Math.random() * personas.length)];
+    const persona = personas[Math.floor(Math.random() * personas.length)];
 
     // ---------------------------------------------------------------------
-    // Everything that varies per request is appended AFTER the static block.
-    // The static prefix therefore remains byte-identical and cacheable.
+    // Everything that varies per-request is appended AFTER the static block,
+    // never interleaved with it, so the long static prefix stays
+    // byte-identical across calls and remains cacheable.
     // ---------------------------------------------------------------------
     const dynamicInstructions = `
 
@@ -364,8 +319,7 @@ ${toneDirective}
 MENTION RULE:
 ${tagDirective}`;
 
-    const systemPrompt =
-      STATIC_SYSTEM_PROMPT + dynamicInstructions;
+    const systemPrompt = STATIC_SYSTEM_PROMPT + dynamicInstructions;
 
     const userMessage = `${tweet.trim()}
 Write the replies now.
@@ -381,77 +335,50 @@ Never mention the voice hint.`;
     const requestPayload = {
       model,
       input: [
-        {
-          role: "system",
-          content: systemPrompt
-        },
-        {
-          role: "user",
-          content: userMessage
-        }
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage }
       ],
       max_output_tokens: 400,
-
-      // Groups requests under one cache key so consecutive requests
-      // are more likely to use the same cached static prefix.
-      prompt_cache_key: PROMPT_CACHE_KEY
+      // Routing hint: groups all /api/generate requests under one cache key
+      // so they're more likely to hit the same server that already holds
+      // the cached static prefix, instead of landing on a fresh machine.
+      prompt_cache_key: PROMPT_CACHE_KEY,
+      // Keeps the cached prefix alive for up to 24h of inactivity instead of
+      // the default 5-10 minute in-memory window, so gaps between users
+      // don't reset the cache. If your OpenAI org/model doesn't support this
+      // field yet, remove this line — it's safe to omit if unsupported.
+      prompt_cache_retention: "24h"
     };
 
-    // Only attach prompt_cache_retention for models that support the
-    // extended 24h policy. Everything else (including gpt-4o-mini) uses the
-    // default in_memory caching automatically - no field needed, and
-    // sending "24h" to an unsupported model can silently break caching
-    // instead of cleanly erroring.
-    if (EXTENDED_CACHE_RETENTION_MODELS.has(model)) {
-      requestPayload.prompt_cache_retention = "24h";
-    }
-
-    // Only attach reasoning for models that support it.
-    // gpt-4o and gpt-4o-mini reject this parameter.
+    // Only attach `reasoning` for models that actually support it.
+    // gpt-4o / gpt-4o-mini reject the request with a 400 if it's present.
     if (REASONING_MODELS.has(model)) {
-      requestPayload.reasoning = {
-        effort: "low"
-      };
+      requestPayload.reasoning = { effort: "low" };
     }
 
-    const response =
-      await openai.responses.create(requestPayload);
+    const response = await openai.responses.create(requestPayload);
 
-    const text =
-      response.output_text || "";
+    const text = response.output_text || "";
 
     if (!text.trim()) {
-      throw new Error(
-        "OpenAI returned an empty response."
-      );
+      throw new Error("OpenAI returned an empty response.");
     }
 
     const replies = [
-      ...text.matchAll(
-        /```(?:[a-zA-Z]*\n)?([\s\S]*?)```/g
-      )
+      ...text.matchAll(/```(?:[a-zA-Z]*\n)?([\s\S]*?)```/g)
     ]
       .map((match) => match[1].trim())
       .filter(Boolean);
 
-    const finalReplies =
-      replies.length > 0
-        ? replies
-        : [text.trim()];
+    const finalReplies = replies.length > 0 ? replies : [text.trim()];
 
     await userRef.update({
-      totalRepliesGenerated:
-        admin.firestore.FieldValue.increment(
-          finalReplies.length
-        ),
+      totalRepliesGenerated: admin.firestore.FieldValue.increment(finalReplies.length),
       updatedAt: timestamp()
     });
 
     if (response.usage) {
-      console.log(
-        "Usage:",
-        JSON.stringify(response.usage)
-      );
+      console.log("Usage:", JSON.stringify(response.usage));
     }
 
     return res.status(200).json({
@@ -461,55 +388,37 @@ Never mention the voice hint.`;
         freeTweetsUsed: null
       }
     });
-
   } catch (error) {
-    console.error(
-      "Generate API error:",
-      error
-    );
+    console.error("Generate API error:", error);
 
-    // If the free submission was reserved and OpenAI failed,
-    // return that submission to the user.
+    // If we reserved a free submission and OpenAI failed,
+    // give that free submission back.
     if (reservationMade) {
       try {
-        const snap =
-          await userRef.get();
-
+        const snap = await userRef.get();
         if (snap.exists) {
           const data = snap.data();
-          const active =
-            getActiveSubscription(data);
+          const active = getActiveSubscription(data);
 
           const rollback = {
-            totalTweetsSubmitted:
-              admin.firestore.FieldValue.increment(-1),
+            totalTweetsSubmitted: admin.firestore.FieldValue.increment(-1),
             updatedAt: timestamp()
           };
 
           if (!active) {
-            rollback.freeTweetsUsed =
-              admin.firestore.FieldValue.increment(-1);
+            rollback.freeTweetsUsed = admin.firestore.FieldValue.increment(-1);
           }
 
           await userRef.update(rollback);
         }
       } catch (rollbackError) {
-        console.error(
-          "Usage rollback failed:",
-          rollbackError
-        );
+        console.error("Usage rollback failed:", rollbackError);
       }
     }
 
-    return res.status(
-      error.statusCode || 500
-    ).json({
-      error:
-        error.message ||
-        "Failed to generate replies.",
-      code:
-        error.code ||
-        "GENERATION_ERROR"
+    return res.status(error.statusCode || 500).json({
+      error: error.message || "Failed to generate replies.",
+      code: error.code || "GENERATION_ERROR"
     });
   }
 }
