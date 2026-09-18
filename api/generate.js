@@ -35,27 +35,21 @@ const REASONING_MODELS = new Set([
 // land on the same cache-holding server. Bump the suffix whenever
 // STATIC_SYSTEM_PROMPT changes, so old and new prefixes don't get mixed
 // under the same key.
-//
-// NOTE: this base structure (key format, prompt_cache_retention always on,
-// same code path) is the exact configuration that was confirmed working -
-// it produced cached_tokens: 1024 in production logs. Only the prompt
-// content below has two small sections added (CONVERSATIONAL, NOT PERSONAL
-// and BANNED OPENINGS) as a controlled test to see whether that content is
-// what's associated with the cache misses seen on later, more heavily
-// rewritten versions. Nothing else changed.
-const PROMPT_CACHE_KEY = "twitai-generate-v3b";
+const PROMPT_CACHE_KEY = "twitai-generate-v3";
 
 // ---------------------------------------------------------------------------
 // STATIC SYSTEM PROMPT
 // General-purpose: reads and responds to whatever the tweet is actually
 // about, not a crypto/CT default. Enforces exactly one sentence per reply.
-// Also enforces no personal-opinion framing and a fixed set of banned
-// openings.
 //
-// SIZE: ~958 words, matching the size of the confirmed-working version
-// (~1200-1300 measured tokens together with the dynamic block below). If
-// you edit this block, check the real `input_tokens` from your usage logs
-// afterward rather than assuming from word count.
+// SIZE NOTE: earlier versions of this prompt ballooned to ~2050-2170 measured
+// tokens (way more than needed) once several example sections were stacked
+// together. This version is trimmed back down to sit around 1200-1300 total
+// measured tokens together with the dynamic FORMAT/LANGUAGE/TONE block below
+// (before the actual tweet text is added) — enough margin above the
+// 1024-token caching floor without paying for unnecessary bulk on every
+// call. If you edit this block, check the real `input_tokens` from your
+// Vercel/OpenAI usage logs afterward rather than assuming from word count.
 // ---------------------------------------------------------------------------
 const STATIC_SYSTEM_PROMPT = `You write natural X (Twitter) replies to any tweet, on any topic.
 
@@ -90,24 +84,6 @@ STYLE:
 - Do not invent facts.
 - Do not over-explain.
 - Do not sound overly polished.
-
-CONVERSATIONAL, NOT PERSONAL:
-- Replies are conversational contributions, not personal opinions or
-  experiences.
-- Never write from the writer's own perspective or claim personal experience,
-  belief, feeling, or preference.
-- Never use "I think", "I believe", "I feel", "I like", "I'd say",
-  "personally", "for me", "my", or "mine".
-- Do not address or advise the poster directly ("you should...").
-- A reply can note a detail, ask a relevant question, or point out a
-  tradeoff or implication, without approving, disapproving, or advising.
-
-BANNED OPENINGS:
-- Never start a reply with "I", "You", "This", "That", "The", or "We", in
-  any capitalization, contraction (e.g. "I'm", "You've"), or
-  punctuation/emoji/quote-prefixed form.
-- Before finalizing, check the literal first word of each reply and rewrite
-  completely with a different natural opening if it violates this rule.
 
 STRICT SENTENCE RULES:
 - Use simple sentences only, one idea per sentence.
@@ -151,7 +127,7 @@ EXAMPLE REPLIES (different topics, each exactly one sentence):
 - Good: "The headline number hides how much of that growth came from one region."
 - Good: "The chart looks like it took a wrong turn at the gym."
 - Bad: "This is so amazing, huge congrats, love seeing this happen."
-- Bad: "I think this is a massive opportunity and I love the direction."
+- Bad: "Great post, totally agree, this is exactly right honestly."
 - Bad: "This yield is insane, definitely aping in, LFG to the moon."
 - Bad: "Massively bullish, this is going parabolic soon, get in now."
 
@@ -167,9 +143,7 @@ COMMON MISTAKES TO AVOID:
 
 FINAL CHECK:
 Before answering, confirm each reply is exactly one sentence with one full
-stop, that the first word is not a banned opening, and that it responds to
-what this specific tweet actually said. Confirm no reply expresses a personal
-opinion or gives direct advice to the poster.
+stop, and that it responds to what this specific tweet actually said.
 Remove any second sentence, unnecessary words, or complex structure.
 Make the replies sound like a real person, not a bot.
 Never use the em dash character "—".`;
@@ -371,9 +345,8 @@ Never mention the voice hint.`;
       prompt_cache_key: PROMPT_CACHE_KEY,
       // Keeps the cached prefix alive for up to 24h of inactivity instead of
       // the default 5-10 minute in-memory window, so gaps between users
-      // don't reset the cache. Confirmed working unconditionally on
-      // gpt-4o-mini in production (produced cached_tokens: 1024) - do not
-      // remove or gate this without new evidence it's actually a problem.
+      // don't reset the cache. If your OpenAI org/model doesn't support this
+      // field yet, remove this line — it's safe to omit if unsupported.
       prompt_cache_retention: "24h"
     };
 
