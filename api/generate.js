@@ -236,8 +236,8 @@ export default async function handler(req, res) {
       tweet,
       minWords = 10,
       maxWords = 15,
-      replyCount = 5,
-      tone = "casual",
+      replyCount = 2,
+      tone = "casual deep kmowledge of the topic",
       tag = "",
       language = "auto"
     } = req.body || {};
