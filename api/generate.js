@@ -29,6 +29,29 @@ const REASONING_MODELS = new Set([
   "o3-mini"
 ]);
 
+// Models that support EXTENDED (24h) prompt cache retention. gpt-4o /
+// gpt-4o-mini and most other models only support the default "in_memory"
+// policy (5-10 min). Sending prompt_cache_retention: "24h" to a model that
+// doesn't support it does not reliably error - it can silently prevent
+// caching from engaging at all (cache_write_tokens stays 0 on every call).
+// So this field is only attached when the model is actually on this list;
+// otherwise it's omitted entirely and the model just uses its default
+// in-memory caching automatically, no parameter needed.
+const EXTENDED_CACHE_RETENTION_MODELS = new Set([
+  "gpt-5.5",
+  "gpt-5.5-pro",
+  "gpt-5.4",
+  "gpt-5.2",
+  "gpt-5.1-codex-max",
+  "gpt-5.1",
+  "gpt-5.1-codex",
+  "gpt-5.1-codex-mini",
+  "gpt-5.1-chat-latest",
+  "gpt-5",
+  "gpt-5-codex",
+  "gpt-4.1"
+]);
+
 // A fixed label for OpenAI's prompt-cache routing.
 // Bump the suffix whenever STATIC_SYSTEM_PROMPT changes.
 const PROMPT_CACHE_KEY = "twitai-generate-v5";
@@ -36,17 +59,6 @@ const PROMPT_CACHE_KEY = "twitai-generate-v5";
 // ---------------------------------------------------------------------------
 // STATIC SYSTEM PROMPT
 // General-purpose X reply writer.
-//
-// SIZE NOTE: this is a condensed version of a prior draft that measured
-// ~1900 words / ~2600 tokens - almost double the intended 1200-1500 token
-// range. The bulk of that bloat was the "banned openings" section spelling
-// out every capitalization and contraction variant of I/You/This/That/The/We
-// individually (that alone was ~500+ words). It's condensed here into a
-// compact rule ("in any capitalization, contraction, or punctuation/emoji/
-// quote-prefixed form") that the model generalizes from just as reliably,
-// without paying the token cost of enumerating every variant. Same approach
-// applied to the "conversational, not personal" and "content" sections.
-// Every original rule is preserved; only the phrasing is condensed.
 //
 // Keep this block between roughly 1200 and 1500 tokens. If you edit it,
 // verify the real `input_tokens` from your usage logs afterward rather than
@@ -236,8 +248,8 @@ export default async function handler(req, res) {
       tweet,
       minWords = 10,
       maxWords = 15,
-      replyCount = 2,
-      tone = "casual deep kmowledge of the topic",
+      replyCount = 5,
+      tone = "casual",
       tag = "",
       language = "auto"
     } = req.body || {};
@@ -382,12 +394,17 @@ Never mention the voice hint.`;
 
       // Groups requests under one cache key so consecutive requests
       // are more likely to use the same cached static prefix.
-      prompt_cache_key: PROMPT_CACHE_KEY,
-
-      // Keeps the cached prefix alive for up to 24 hours.
-      // If unsupported by your model/org, this field can be removed.
-      prompt_cache_retention: "24h"
+      prompt_cache_key: PROMPT_CACHE_KEY
     };
+
+    // Only attach prompt_cache_retention for models that support the
+    // extended 24h policy. Everything else (including gpt-4o-mini) uses the
+    // default in_memory caching automatically - no field needed, and
+    // sending "24h" to an unsupported model can silently break caching
+    // instead of cleanly erroring.
+    if (EXTENDED_CACHE_RETENTION_MODELS.has(model)) {
+      requestPayload.prompt_cache_retention = "24h";
+    }
 
     // Only attach reasoning for models that support it.
     // gpt-4o and gpt-4o-mini reject this parameter.
