@@ -33,27 +33,69 @@ const TONE_REFERENCE_TABLE = Object.entries(TONE_INSTRUCTIONS)
 // is often set to a dated snapshot string (e.g. "gpt-5.4-nano-2026-03-17"),
 // which would never match a Set of bare family names, so this checks
 // whether the configured model STARTS WITH one of these prefixes instead.
-const REASONING_MODEL_PREFIXES = [
-  "gpt-5.4-nano",
-  "gpt-5.4-mini",
-  "gpt-5-nano",
-  "gpt-5-mini",
-  "o1",
-  "o3"
+//
+// EFFORT LEVEL: reasoning tokens are drawn from the SAME max_output_tokens
+// budget as the visible reply, on the Responses API. For a task this
+// simple (one short sentence, no multi-step logic), there is nothing for
+// deep reasoning to buy you, and every reasoning token spent is a token
+// not available for the actual reply. "low" was still enough for gpt-5-mini
+// to occasionally burn through the whole 400-token budget on reasoning
+// alone and return an empty output_text -- OpenAI's own forum has many
+// reports of exactly this on gpt-5-mini/nano. "minimal" keeps reasoning
+// close to off for the mini/nano tier, which is the right setting for a
+// short, low-latency, non-analytical task like this one. o1/o3 do not
+// accept "minimal" (their lowest supported level is "low"), so they keep
+// their own entry.
+const REASONING_MODEL_EFFORT = [
+  { prefix: "gpt-5.4-nano", effort: "minimal" },
+  { prefix: "gpt-5.4-mini", effort: "minimal" },
+  { prefix: "gpt-5-nano", effort: "minimal" },
+  { prefix: "gpt-5-mini", effort: "minimal" },
+  { prefix: "o1", effort: "low" },
+  { prefix: "o3", effort: "low" }
 ];
 
-function supportsReasoningParam(model) {
-  if (!model) return false;
-  return REASONING_MODEL_PREFIXES.some((prefix) => model.startsWith(prefix));
+function getReasoningEffort(model) {
+  if (!model) return null;
+  const match = REASONING_MODEL_EFFORT.find(({ prefix }) =>
+    model.startsWith(prefix)
+  );
+  return match ? match.effort : null;
 }
 
-// A fixed label for OpenAI's prompt-cache routing. All requests to this
-// endpoint share the same static system prompt, so using one constant key
+// See the max_output_tokens comment at the call site for why reasoning
+// models need a separate, larger budget than non-reasoning ones.
+const BASE_OUTPUT_TOKENS = 400;
+const REASONING_OUTPUT_BUFFER = 1000;
+const RETRY_OUTPUT_TOKEN_INCREASE = 1500;
+
+// A fixed label prefix for OpenAI's prompt-cache routing. All requests to
+// this endpoint share the same static system prompt, so a constant prefix
 // groups them together and makes it far more likely consecutive requests
 // land on the same cache-holding server. Bump the suffix whenever
 // STATIC_SYSTEM_PROMPT changes, so old and new prefixes don't get mixed
 // under the same key.
-const PROMPT_CACHE_KEY = "twitai-generate-v3";
+//
+// SHARDING: a single prompt_cache_key is one lane on OpenAI's side, and per
+// OpenAI's own docs that lane starts dropping cache hits once combined
+// traffic on it exceeds roughly 15 requests/minute -- at that point ANY
+// concurrent request (regardless of its tone/format settings, regardless of
+// which user sent it) can push the lane over capacity and knock later
+// requests on that same key back to a cold machine. Since every request's
+// system prompt is byte-identical no matter who sent it, splitting traffic
+// across several keys is safe: each shard warms up independently and serves
+// hits once it's seen a couple of requests, and the effective combined
+// capacity becomes roughly SHARD_COUNT x 15/min instead of one shared 15/min
+// ceiling for the whole app. Raise SHARD_COUNT if you're seeing this at
+// higher volume; each additional shard trades a bit of hit-rate efficiency
+// (more machines each holding their own warm copy) for more total headroom.
+const PROMPT_CACHE_KEY_BASE = "twitai-generate-v3";
+const PROMPT_CACHE_SHARD_COUNT = Number(process.env.PROMPT_CACHE_SHARD_COUNT) || 4;
+
+function pickPromptCacheKey() {
+  const shard = Math.floor(Math.random() * PROMPT_CACHE_SHARD_COUNT);
+  return `${PROMPT_CACHE_KEY_BASE}-shard${shard}`;
+}
 
 // ---------------------------------------------------------------------------
 // STATIC SYSTEM PROMPT
@@ -396,6 +438,13 @@ Never mention the style seed.
 Never mention the voice hint.`;
 
     const model = process.env.OPENAI_MODEL;
+    const reasoningEffort = getReasoningEffort(model);
+    // Extra headroom given to reasoning-capable models only, on top of
+    // BASE_OUTPUT_TOKENS, so reasoning tokens have room to spend without
+    // starving the visible reply. Non-reasoning models (gpt-4o-mini) get
+    // none of this since they never produce reasoning tokens in the first
+    // place -- their whole budget is BASE_OUTPUT_TOKENS.
+    const reasoningOutputBuffer = reasoningEffort ? REASONING_OUTPUT_BUFFER : 0;
 
     const requestPayload = {
       model,
@@ -403,11 +452,23 @@ Never mention the voice hint.`;
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage }
       ],
-      max_output_tokens: 400,
-      // Routing hint: groups all /api/generate requests under one cache key
-      // so they're more likely to hit the same server that already holds
-      // the cached static prefix, instead of landing on a fresh machine.
-      prompt_cache_key: PROMPT_CACHE_KEY,
+      // BASE_OUTPUT_TOKENS covers the actual visible reply text for a
+      // non-reasoning model (gpt-4o-mini and similar), where every token in
+      // the budget goes toward the reply. Reasoning-capable models (gpt-5
+      // family, o1/o3) draw their internal reasoning tokens from this SAME
+      // budget before writing any visible text, so they get extra headroom
+      // added below. Without it, the model can spend the whole budget on
+      // reasoning and return an empty output_text -- this is a documented,
+      // model-specific failure mode, not something that happens on
+      // gpt-4o-mini, which is why this app "fully works" there and fails
+      // intermittently on gpt-5-mini.
+      max_output_tokens: BASE_OUTPUT_TOKENS + reasoningOutputBuffer,
+      // Routing hint: spreads /api/generate requests across a small pool of
+      // cache keys (see PROMPT_CACHE_SHARD_COUNT above) instead of one
+      // fixed key, so a burst of concurrent requests from different users
+      // doesn't all compete for the same 15-req/min cache lane and knock
+      // each other back to a cold machine.
+      prompt_cache_key: pickPromptCacheKey(),
       // Keeps the cached prefix alive for up to 24h of inactivity instead of
       // the default 5-10 minute in-memory window, so gaps between users
       // don't reset the cache. If your OpenAI org/model doesn't support this
@@ -417,13 +478,39 @@ Never mention the voice hint.`;
 
     // Only attach `reasoning` for models that actually support it.
     // gpt-4o / gpt-4o-mini reject the request with a 400 if it's present.
-    if (supportsReasoningParam(model)) {
-      requestPayload.reasoning = { effort: "low" };
+    if (reasoningEffort) {
+      requestPayload.reasoning = { effort: reasoningEffort };
     }
 
-    const response = await openai.responses.create(requestPayload);
+    let response = await openai.responses.create(requestPayload);
+    let text = response.output_text || "";
 
-    const text = response.output_text || "";
+    // A reasoning model can still burn its entire budget on internal
+    // reasoning tokens and return no visible message at all (status
+    // "incomplete", incomplete_details.reason "max_output_tokens", output
+    // containing only a "reasoning" item). One retry with a much larger
+    // budget resolves the large majority of these without failing the
+    // user's request outright; if it still comes back empty, fall through
+    // to the existing empty-response error below.
+    const wasTruncatedByBudget =
+      response.status === "incomplete" &&
+      response.incomplete_details &&
+      response.incomplete_details.reason === "max_output_tokens";
+
+    if (!text.trim() && reasoningEffort && wasTruncatedByBudget) {
+      console.warn(
+        "Empty output_text on first attempt (reasoning exhausted budget), retrying with a larger max_output_tokens.",
+        { model, firstAttemptBudget: requestPayload.max_output_tokens }
+      );
+
+      const retryPayload = {
+        ...requestPayload,
+        max_output_tokens: requestPayload.max_output_tokens + RETRY_OUTPUT_TOKEN_INCREASE
+      };
+
+      response = await openai.responses.create(retryPayload);
+      text = response.output_text || "";
+    }
 
     if (!text.trim()) {
       throw new Error("OpenAI returned an empty response.");
