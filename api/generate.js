@@ -3,7 +3,7 @@ import { getDb, getFirebaseAdmin, requireUser, timestamp } from "./_firebase.js"
 
 const FREE_LIMIT = 100;
 
-const tones = {
+const TONE_INSTRUCTIONS = {
   technical: "Mention one clear technical detail.",
   analytical: "Give one thoughtful observation.",
   defi: "Focus on one practical DeFi point.",
@@ -23,7 +23,7 @@ const DEFAULT_TONE_KEY = "balanced";
 // the name up in this table. This keeps the tone directive's actual prose
 // out of the varying part of the prompt, so switching tones between callers
 // no longer changes the system message's bytes at all.
-const TONE_REFERENCE_TABLE = Object.entries(tones)
+const TONE_REFERENCE_TABLE = Object.entries(TONE_INSTRUCTIONS)
   .map(([key, instruction]) => `- ${key}: ${instruction}`)
   .join("\n");
 
@@ -314,7 +314,7 @@ export default async function handler(req, res) {
     // ever send a short NAME across the wire, never the tone's full
     // instruction text — that text already lives in the static system
     // prompt's TONE REFERENCE TABLE, so the model looks it up there instead.
-    const toneKey = Object.prototype.hasOwnProperty.call(tones, tone)
+    const toneKey = Object.prototype.hasOwnProperty.call(TONE_INSTRUCTIONS, tone)
       ? tone
       : DEFAULT_TONE_KEY;
 
