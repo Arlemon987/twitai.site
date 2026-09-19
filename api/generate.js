@@ -9,7 +9,6 @@ const FREE_LIMIT = 100;
 |--------------------------------------------------------------------------
 |
 | Set in Vercel:
-|
 | OPENAI_MODEL=gpt-5-mini
 |
 | IMPORTANT:
@@ -48,12 +47,6 @@ const TONE_REFERENCE_TABLE = Object.entries(TONE_INSTRUCTIONS)
 |--------------------------------------------------------------------------
 | REASONING MODEL SETTINGS
 |--------------------------------------------------------------------------
-|
-| GPT-5 family models can consume output-token budget internally.
-|
-| For Twit AI, replies are short and do not need deep reasoning.
-| Minimal reasoning is therefore appropriate.
-|
 */
 
 const REASONING_MODEL_EFFORT = [
@@ -68,11 +61,7 @@ const REASONING_MODEL_EFFORT = [
 
 function getReasoningEffort(model) {
   if (!model) return null;
-
-  const match = REASONING_MODEL_EFFORT.find(({ prefix }) =>
-    model.startsWith(prefix)
-  );
-
+  const match = REASONING_MODEL_EFFORT.find(({ prefix }) => model.startsWith(prefix));
   return match ? match.effort : null;
 }
 
@@ -80,12 +69,6 @@ function getReasoningEffort(model) {
 |--------------------------------------------------------------------------
 | OUTPUT TOKEN BUDGET
 |--------------------------------------------------------------------------
-|
-| Five replies of 10-15 words normally require very little output.
-|
-| We still give reasoning-capable models extra room because reasoning
-| tokens are drawn from the same max_output_tokens budget.
-|
 */
 
 const BASE_OUTPUT_TOKENS = 400;
@@ -105,14 +88,8 @@ function timestampToDate(value) {
     return value.toDate();
   }
 
-  if (
-    typeof value === "object" &&
-    value._seconds !== undefined
-  ) {
-    return new Date(
-      value._seconds * 1000 +
-      Math.floor((value._nanoseconds || 0) / 1000000)
-    );
+  if (typeof value === "object" && value._seconds !== undefined) {
+    return new Date(value._seconds * 1000 + Math.floor((value._nanoseconds || 0) / 1000000));
   }
 
   if (value instanceof Date) {
@@ -120,10 +97,7 @@ function timestampToDate(value) {
   }
 
   const date = new Date(value);
-
-  return Number.isNaN(date.getTime())
-    ? null
-    : date;
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 /*
@@ -133,40 +107,19 @@ function timestampToDate(value) {
 */
 
 function getActiveSubscription(data) {
-  const expiry = timestampToDate(
-    data.subscriptionExpiry
-  );
-
-  return (
-    data.subscriptionStatus === "active" &&
-    expiry &&
-    expiry.getTime() > Date.now()
-  );
+  const expiry = timestampToDate(data.subscriptionExpiry);
+  return data.subscriptionStatus === "active" && expiry && expiry.getTime() > Date.now();
 }
 
 /*
 |--------------------------------------------------------------------------
-| STATIC SYSTEM PROMPT
+| STATIC SYSTEM PROMPT (MAXIMUM CACHE PREFIX)
 |--------------------------------------------------------------------------
 |
-| IMPORTANT FOR PROMPT CACHING:
-|
+| CRITICAL FOR PROMPT CACHING:
 | NOTHING REQUEST-SPECIFIC SHOULD EVER BE PUT INSIDE THIS STRING.
-|
-| Do not put:
-| - tweet
-| - tone selection
-| - reply count
-| - word count
-| - language
-| - tag
-| - random values
-| - username
-| - persona
-|
-| here.
-|
-| This entire prefix should remain byte-for-byte identical.
+| Do not put tweet, tone selection, reply count, word count, language, tag, or persona here.
+| This entire prefix must remain byte-for-byte identical across all requests.
 |
 */
 
@@ -504,7 +457,7 @@ Never output anything outside the requested code blocks.
 
 TONE REFERENCE TABLE:
 
-${TONE_REFERENCE_TABLE}
+ ${TONE_REFERENCE_TABLE}
 
 The tone name supplied by the application tells you which tone instruction to apply.
 
@@ -548,9 +501,7 @@ Always prioritize natural, specific, human replies over generic enthusiasm.`;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({
-      error: "Method not allowed."
-    });
+    return res.status(405).json({ error: "Method not allowed." });
   }
 
   let decoded;
@@ -567,9 +518,7 @@ export default async function handler(req, res) {
   const db = getDb();
   const admin = getFirebaseAdmin();
 
-  const userRef = db
-    .collection("users")
-    .doc(decoded.uid);
+  const userRef = db.collection("users").doc(decoded.uid);
 
   let reservationMade = false;
 
@@ -591,9 +540,7 @@ export default async function handler(req, res) {
     } = req.body || {};
 
     if (!tweet || !tweet.trim()) {
-      return res.status(400).json({
-        error: "Tweet text is required."
-      });
+      return res.status(400).json({ error: "Tweet text is required." });
     }
 
     /*
@@ -602,20 +549,9 @@ export default async function handler(req, res) {
     |--------------------------------------------------------------------------
     */
 
-    const safeMinWords = Math.max(
-      1,
-      Math.min(100, Number(minWords) || 10)
-    );
-
-    const safeMaxWords = Math.max(
-      safeMinWords,
-      Math.min(100, Number(maxWords) || 15)
-    );
-
-    const safeReplyCount = Math.max(
-      1,
-      Math.min(20, Number(replyCount) || 5)
-    );
+    const safeMinWords = Math.max(1, Math.min(100, Number(minWords) || 10));
+    const safeMaxWords = Math.max(safeMinWords, Math.min(100, Number(maxWords) || 15));
+    const safeReplyCount = Math.max(1, Math.min(20, Number(replyCount) || 5));
 
     /*
     |--------------------------------------------------------------------------
@@ -627,27 +563,18 @@ export default async function handler(req, res) {
       const snap = await transaction.get(userRef);
 
       if (!snap.exists) {
-        throw Object.assign(
-          new Error("User profile not found."),
-          {
-            statusCode: 403,
-            code: "USER_PROFILE_NOT_FOUND"
-          }
-        );
+        throw Object.assign(new Error("User profile not found."), {
+          statusCode: 403,
+          code: "USER_PROFILE_NOT_FOUND"
+        });
       }
 
       const data = snap.data();
-
       const active = getActiveSubscription(data);
 
-      if (
-        !active &&
-        (data.freeTweetsUsed || 0) >= FREE_LIMIT
-      ) {
+      if (!active && (data.freeTweetsUsed || 0) >= FREE_LIMIT) {
         throw Object.assign(
-          new Error(
-            "Your 100 free tweet submissions are finished. Please subscribe to continue."
-          ),
+          new Error("Your 100 free tweet submissions are finished. Please subscribe to continue."),
           {
             statusCode: 403,
             code: "FREE_LIMIT_REACHED"
@@ -656,15 +583,12 @@ export default async function handler(req, res) {
       }
 
       const updates = {
-        totalTweetsSubmitted:
-          admin.firestore.FieldValue.increment(1),
-
+        totalTweetsSubmitted: admin.firestore.FieldValue.increment(1),
         updatedAt: timestamp()
       };
 
       if (!active) {
-        updates.freeTweetsUsed =
-          admin.firestore.FieldValue.increment(1);
+        updates.freeTweetsUsed = admin.firestore.FieldValue.increment(1);
       }
 
       transaction.update(userRef, updates);
@@ -688,11 +612,8 @@ export default async function handler(req, res) {
     |--------------------------------------------------------------------------
     */
 
-    const model =
-      process.env.OPENAI_MODEL || "gpt-5-mini";
-
-    const reasoningEffort =
-      getReasoningEffort(model);
+    const model = process.env.OPENAI_MODEL || "gpt-5-mini";
+    const reasoningEffort = getReasoningEffort(model);
 
     /*
     |--------------------------------------------------------------------------
@@ -700,57 +621,9 @@ export default async function handler(req, res) {
     |--------------------------------------------------------------------------
     */
 
-    const toneKey =
-      Object.prototype.hasOwnProperty.call(
-        TONE_INSTRUCTIONS,
-        tone
-      )
-        ? tone
-        : DEFAULT_TONE_KEY;
-
-    /*
-    |--------------------------------------------------------------------------
-    | TAG
-    |--------------------------------------------------------------------------
-    */
-
-    const tagDirective = tag
-      ? `Mention ${tag} in at most 1 reply. Only use it when relevant.`
-      : "Do not force mentions or tags.";
-
-    /*
-    |--------------------------------------------------------------------------
-    | LANGUAGE
-    |--------------------------------------------------------------------------
-    */
-
-    const langDirective =
-      language === "auto"
-        ? "Reply in the post's language. Use English if the language is unclear."
-        : `Write strictly in ${language}.`;
-
-    /*
-    |--------------------------------------------------------------------------
-    | PERSONA
-    |--------------------------------------------------------------------------
-    |
-    | This is intentionally in the dynamic portion.
-    |
-    */
-
-    const personas = [
-      "a casual reader",
-      "a thoughtful reader",
-      "a curious community member",
-      "a busy user replying quickly",
-      "a practical observer",
-      "someone familiar with the topic"
-    ];
-
-    const persona =
-      personas[
-        Math.floor(Math.random() * personas.length)
-      ];
+    const toneKey = Object.prototype.hasOwnProperty.call(TONE_INSTRUCTIONS, tone)
+      ? tone
+      : DEFAULT_TONE_KEY;
 
     /*
     |--------------------------------------------------------------------------
@@ -758,10 +631,21 @@ export default async function handler(req, res) {
     |--------------------------------------------------------------------------
     |
     | Everything here can change between requests.
-    |
-    | The static system prompt above remains identical.
+    | The static system prompt above remains identical to ensure max caching.
+    | NOTE: Random persona generation was removed from this block because 
+    | dynamic prefixing breaks prompt caching. The system prompt implicitly 
+    | handles the "persona" via tone instructions.
     |
     */
+
+    const tagDirective = tag
+      ? `Mention ${tag} in at most 1 reply. Only use it when relevant.`
+      : "Do not force mentions or tags.";
+
+    const langDirective =
+      language === "auto"
+        ? "Reply in the post's language. Use English if the language is unclear."
+        : `Write strictly in ${language}.`;
 
     const dynamicInstructions = `FORMAT:
 - Exactly ${safeReplyCount} replies.
@@ -776,23 +660,20 @@ export default async function handler(req, res) {
 - Do not add commentary.
 
 LANGUAGE:
-${langDirective}
+ ${langDirective}
 
 TONE:
-${toneKey}
+ ${toneKey}
 
 MENTION RULE:
-${tagDirective}`;
-
-    const userMessage = `${dynamicInstructions}
+ ${tagDirective}
 
 TWEET:
-${tweet.trim()}
-
-PERSONA:
-${persona}
+ ${tweet.trim()}
 
 Generate the replies now.`;
+
+    const userMessage = dynamicInstructions;
 
     /*
     |--------------------------------------------------------------------------
@@ -800,14 +681,8 @@ Generate the replies now.`;
     |--------------------------------------------------------------------------
     */
 
-    const reasoningOutputBuffer =
-      reasoningEffort
-        ? REASONING_OUTPUT_BUFFER
-        : 0;
-
-    const maxOutputTokens =
-      BASE_OUTPUT_TOKENS +
-      reasoningOutputBuffer;
+    const reasoningOutputBuffer = reasoningEffort ? REASONING_OUTPUT_BUFFER : 0;
+    const maxOutputTokens = BASE_OUTPUT_TOKENS + reasoningOutputBuffer;
 
     /*
     |--------------------------------------------------------------------------
@@ -815,7 +690,6 @@ Generate the replies now.`;
     |--------------------------------------------------------------------------
     |
     | CRITICAL CACHE DESIGN:
-    |
     | 1. Static system prompt first.
     | 2. Dynamic content second.
     | 3. One stable prompt_cache_key.
@@ -824,7 +698,6 @@ Generate the replies now.`;
 
     const requestPayload = {
       model,
-
       input: [
         {
           role: "system",
@@ -835,10 +708,13 @@ Generate the replies now.`;
           content: userMessage
         }
       ],
-
       max_output_tokens: maxOutputTokens,
-
-      prompt_cache_key: PROMPT_CACHE_KEY
+      prompt_cache_key: PROMPT_CACHE_KEY,
+      text: {
+        format: {
+          type: "text"
+        }
+      }
     };
 
     /*
@@ -859,13 +735,8 @@ Generate the replies now.`;
     |--------------------------------------------------------------------------
     */
 
-    let response =
-      await openai.responses.create(
-        requestPayload
-      );
-
-    let text =
-      response.output_text || "";
+    let response = await openai.responses.create(requestPayload);
+    let text = response.output_text || "";
 
     /*
     |--------------------------------------------------------------------------
@@ -876,38 +747,21 @@ Generate the replies now.`;
     const wasTruncatedByBudget =
       response.status === "incomplete" &&
       response.incomplete_details &&
-      response.incomplete_details.reason ===
-        "max_output_tokens";
+      response.incomplete_details.reason === "max_output_tokens";
 
-    if (
-      !text.trim() &&
-      reasoningEffort &&
-      wasTruncatedByBudget
-    ) {
-      console.warn(
-        "GPT reasoning exhausted output budget. Retrying.",
-        {
-          model,
-          firstAttemptBudget:
-            requestPayload.max_output_tokens
-        }
-      );
+    if (!text.trim() && reasoningEffort && wasTruncatedByBudget) {
+      console.warn("GPT reasoning exhausted output budget. Retrying.", {
+        model,
+        firstAttemptBudget: requestPayload.max_output_tokens
+      });
 
       const retryPayload = {
         ...requestPayload,
-
-        max_output_tokens:
-          requestPayload.max_output_tokens +
-          RETRY_OUTPUT_TOKEN_INCREASE
+        max_output_tokens: requestPayload.max_output_tokens + RETRY_OUTPUT_TOKEN_INCREASE
       };
 
-      response =
-        await openai.responses.create(
-          retryPayload
-        );
-
-      text =
-        response.output_text || "";
+      response = await openai.responses.create(retryPayload);
+      text = response.output_text || "";
     }
 
     /*
@@ -917,9 +771,7 @@ Generate the replies now.`;
     */
 
     if (!text.trim()) {
-      throw new Error(
-        "OpenAI returned an empty response."
-      );
+      throw new Error("OpenAI returned an empty response.");
     }
 
     /*
@@ -928,18 +780,11 @@ Generate the replies now.`;
     |--------------------------------------------------------------------------
     */
 
-    const replies = [
-      ...text.matchAll(
-        /```(?:[a-zA-Z]*\n)?([\s\S]*?)```/g
-      )
-    ]
+    const replies = [...text.matchAll(/```(?:[a-zA-Z]*\n)?([\s\S]*?)```/g)]
       .map((match) => match[1].trim())
       .filter(Boolean);
 
-    const finalReplies =
-      replies.length > 0
-        ? replies
-        : [text.trim()];
+    const finalReplies = replies.length > 0 ? replies : [text.trim()];
 
     /*
     |--------------------------------------------------------------------------
@@ -948,11 +793,7 @@ Generate the replies now.`;
     */
 
     await userRef.update({
-      totalRepliesGenerated:
-        admin.firestore.FieldValue.increment(
-          finalReplies.length
-        ),
-
+      totalRepliesGenerated: admin.firestore.FieldValue.increment(finalReplies.length),
       updatedAt: timestamp()
     });
 
@@ -963,68 +804,31 @@ Generate the replies now.`;
     */
 
     if (response.usage) {
-      const usage =
-        response.usage;
-
-      const inputTokens =
-        usage.input_tokens || 0;
-
-      const cachedTokens =
-        usage.input_tokens_details
-          ?.cached_tokens || 0;
+      const usage = response.usage;
+      const inputTokens = usage.input_tokens || 0;
+      const cachedTokens = usage.input_tokens_details?.cached_tokens || 0;
 
       const cachePercentage =
         inputTokens > 0
-          ? Number(
-              (
-                (cachedTokens /
-                  inputTokens) *
-                100
-              ).toFixed(2)
-            )
+          ? Number(((cachedTokens / inputTokens) * 100).toFixed(2))
           : 0;
 
       console.log(
         "Twit AI Usage:",
         JSON.stringify({
           model,
-
-          input_tokens:
-            inputTokens,
-
-          cached_tokens:
-            cachedTokens,
-
-          cache_percentage:
-            cachePercentage,
-
-          cache_key:
-            PROMPT_CACHE_KEY,
-
-          output_tokens:
-            usage.output_tokens || 0,
-
-          total_tokens:
-            usage.total_tokens || 0,
-
-          reasoning_tokens:
-            usage.output_tokens_details
-              ?.reasoning_tokens || 0,
-
-          reasoning_effort:
-            reasoningEffort,
-
-          tone:
-            toneKey,
-
-          reply_count:
-            safeReplyCount,
-
-          min_words:
-            safeMinWords,
-
-          max_words:
-            safeMaxWords
+          input_tokens: inputTokens,
+          cached_tokens: cachedTokens,
+          cache_percentage: cachePercentage,
+          cache_key: PROMPT_CACHE_KEY,
+          output_tokens: usage.output_tokens || 0,
+          total_tokens: usage.total_tokens || 0,
+          reasoning_tokens: usage.output_tokens_details?.reasoning_tokens || 0,
+          reasoning_effort: reasoningEffort,
+          tone: toneKey,
+          reply_count: safeReplyCount,
+          min_words: safeMinWords,
+          max_words: safeMaxWords
         })
       );
     }
@@ -1037,9 +841,7 @@ Generate the replies now.`;
 
     return res.status(200).json({
       text: text.trim(),
-
       replies: finalReplies,
-
       usage: {
         freeTweetsUsed: null
       }
@@ -1052,10 +854,7 @@ Generate the replies now.`;
     |--------------------------------------------------------------------------
     */
 
-    console.error(
-      "Generate API error:",
-      error
-    );
+    console.error("Generate API error:", error);
 
     /*
     |--------------------------------------------------------------------------
@@ -1065,42 +864,25 @@ Generate the replies now.`;
 
     if (reservationMade) {
       try {
-        const snap =
-          await userRef.get();
+        const snap = await userRef.get();
 
         if (snap.exists) {
-          const data =
-            snap.data();
-
-          const active =
-            getActiveSubscription(data);
+          const data = snap.data();
+          const active = getActiveSubscription(data);
 
           const rollback = {
-            totalTweetsSubmitted:
-              admin.firestore.FieldValue.increment(
-                -1
-              ),
-
-            updatedAt:
-              timestamp()
+            totalTweetsSubmitted: admin.firestore.FieldValue.increment(-1),
+            updatedAt: timestamp()
           };
 
           if (!active) {
-            rollback.freeTweetsUsed =
-              admin.firestore.FieldValue.increment(
-                -1
-              );
+            rollback.freeTweetsUsed = admin.firestore.FieldValue.increment(-1);
           }
 
-          await userRef.update(
-            rollback
-          );
+          await userRef.update(rollback);
         }
       } catch (rollbackError) {
-        console.error(
-          "Usage rollback failed:",
-          rollbackError
-        );
+        console.error("Usage rollback failed:", rollbackError);
       }
     }
 
@@ -1110,16 +892,9 @@ Generate the replies now.`;
     |--------------------------------------------------------------------------
     */
 
-    return res.status(
-      error.statusCode || 500
-    ).json({
-      error:
-        error.message ||
-        "Failed to generate replies.",
-
-      code:
-        error.code ||
-        "GENERATION_ERROR"
+    return res.status(error.statusCode || 500).json({
+      error: error.message || "Failed to generate replies.",
+      code: error.code || "GENERATION_ERROR"
     });
   }
 }
