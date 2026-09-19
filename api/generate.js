@@ -5,26 +5,20 @@ const FREE_LIMIT = 100;
 
 /*
 |--------------------------------------------------------------------------
-| MODEL / CACHE CONFIGURATION
+| OPENAI CLIENT (SINGLETON)
 |--------------------------------------------------------------------------
-|
-| Set in Vercel:
-| OPENAI_MODEL=gpt-5-mini
-|
-| IMPORTANT:
-| Keep ONE cache key for this endpoint.
-| Do not randomly shard unless your real traffic becomes very high.
-|
+| Instantiating outside the handler allows connection reuse across
+| warm serverless invocations.
 */
-
-const PROMPT_CACHE_KEY = "twitai-generate-v4";
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
 /*
 |--------------------------------------------------------------------------
 | TONES
 |--------------------------------------------------------------------------
 */
-
 const TONE_INSTRUCTIONS = {
   technical: "Mention one clear technical detail.",
   analytical: "Give one thoughtful observation.",
@@ -48,7 +42,6 @@ const TONE_REFERENCE_TABLE = Object.entries(TONE_INSTRUCTIONS)
 | REASONING MODEL SETTINGS
 |--------------------------------------------------------------------------
 */
-
 const REASONING_MODEL_EFFORT = [
   { prefix: "gpt-5.6", effort: "minimal" },
   { prefix: "gpt-5.4-nano", effort: "minimal" },
@@ -70,7 +63,6 @@ function getReasoningEffort(model) {
 | OUTPUT TOKEN BUDGET
 |--------------------------------------------------------------------------
 */
-
 const BASE_OUTPUT_TOKENS = 400;
 const REASONING_OUTPUT_BUFFER = 800;
 const RETRY_OUTPUT_TOKEN_INCREASE = 1200;
@@ -80,7 +72,6 @@ const RETRY_OUTPUT_TOKEN_INCREASE = 1200;
 | TIMESTAMP HELPER
 |--------------------------------------------------------------------------
 */
-
 function timestampToDate(value) {
   if (!value) return null;
 
@@ -105,7 +96,6 @@ function timestampToDate(value) {
 | SUBSCRIPTION
 |--------------------------------------------------------------------------
 */
-
 function getActiveSubscription(data) {
   const expiry = timestampToDate(data.subscriptionExpiry);
   return data.subscriptionStatus === "active" && expiry && expiry.getTime() > Date.now();
@@ -113,16 +103,9 @@ function getActiveSubscription(data) {
 
 /*
 |--------------------------------------------------------------------------
-| STATIC SYSTEM PROMPT (MAXIMUM CACHE PREFIX)
+| STATIC SYSTEM PROMPT (GUARANTEED CACHE PREFIX >= 1024 TOKENS)
 |--------------------------------------------------------------------------
-|
-| CRITICAL FOR PROMPT CACHING:
-| NOTHING REQUEST-SPECIFIC SHOULD EVER BE PUT INSIDE THIS STRING.
-| Do not put tweet, tone selection, reply count, word count, language, tag, or persona here.
-| This entire prefix must remain byte-for-byte identical across all requests.
-|
 */
-
 const STATIC_SYSTEM_PROMPT = `You write natural X (Twitter) replies to any tweet, on any topic.
 
 Read the tweet fully before writing.
@@ -136,25 +119,16 @@ Identify what it is actually about:
 Reply to that specific content.
 
 Do not write a generic reply that could sit under almost any tweet.
-
 Do not summarize the tweet.
-
 Do not rewrite the tweet.
-
 Do not simply paraphrase the tweet.
-
 Do not sound like AI.
-
 Do not sound like a marketer.
-
 Do not sound like an ambassador.
-
 Do not sound corporate.
-
 Do not assume every tweet is about crypto.
 
 Match the actual topic of the tweet.
-
 The topic may be:
 - technology
 - crypto
@@ -176,268 +150,147 @@ The topic may be:
 Always respond to the actual tweet topic.
 
 ONE SENTENCE RULE:
-
 Every reply must be exactly ONE complete sentence.
-
 Never write two sentences in one reply.
-
 Never put a period in the middle of a reply.
-
 Use at most one full stop and only at the end.
-
 A reply may also end without punctuation.
-
 If a second thought feels necessary, remove it.
-
 Keep one clear thought per reply.
 
 STYLE:
-
 Use simple everyday English.
-
 Keep the wording natural.
-
 Keep the reply easy to read.
-
 Sound like a real person replying quickly on X.
-
 Use one clear thought.
-
 Add a small fresh observation when possible.
-
 Stay relevant to the exact tweet.
-
 Do not force crypto terminology into a non-crypto tweet.
-
 Do not invent facts.
-
 Do not make unsupported claims.
-
 Do not over-explain.
-
 Do not sound overly polished.
-
 Do not use unnecessary technical language.
-
 Do not use corporate language.
 
 CASING AND PUNCTUATION VARIETY:
-
 Natural X replies do not all look identical.
-
 Vary the opening style across replies.
-
 Some replies may start with lowercase.
-
 Some replies may start with normal capitalization.
-
 Some replies may end without punctuation.
-
 Some replies may end with a period.
-
 Do not make every reply lowercase.
-
 Do not make every reply missing punctuation.
-
 Proper nouns must still be capitalized correctly.
-
 Acronyms must remain correct.
-
 The word I must remain capitalized.
-
 Only the first letter and final punctuation may vary.
-
 Do not intentionally break normal punctuation anywhere else.
 
 STRICT SENTENCE RULES:
-
 Use simple sentences.
-
 Keep sentences short.
-
 Avoid compound sentences.
-
 Avoid semicolons.
-
 Avoid colons.
-
 Avoid parentheses.
-
 Never use the em dash character.
-
 Avoid joining two complete thoughts with and.
-
 Avoid joining two complete thoughts with but.
-
 Avoid because when it creates a long sentence.
-
 Avoid although when it creates a long sentence.
-
 Avoid which when it creates a long sentence.
-
 Avoid that when it creates a long sentence.
-
 Avoid since when it creates a long sentence.
-
 Avoid while when it creates a long sentence.
-
 Avoid so when it creates a compound sentence.
-
 If a second thought appears necessary, remove it.
-
 Never pack multiple ideas into one sentence.
 
 CONTENT:
-
 Do not simply repeat the main point.
-
 Add a fresh reaction.
-
 Add a useful observation.
-
 Add a specific detail when possible.
-
 Keep replies constructive.
-
 Keep skepticism natural when appropriate.
-
 Do not manufacture negativity.
-
 Questions are allowed when they feel natural.
-
 Do not force questions.
-
 Do not use questions for every reply.
 
 AVOID GENERIC REPLIES:
-
 Never use generic praise without a real thought.
-
 Avoid phrases such as:
-
-Great post.
-
-Exactly.
-
-Well said.
-
-This is huge.
-
-Love this.
-
-So true.
-
-Game changer.
-
-Revolutionary.
-
-Bullish.
-
-LFG.
-
-This is amazing.
-
-Huge.
-
-Massive.
-
-Amazing work.
+- Great post.
+- Exactly.
+- Well said.
+- This is huge.
+- Love this.
+- So true.
+- Game changer.
+- Revolutionary.
+- Bullish.
+- LFG.
+- This is amazing.
+- Huge.
+- Massive.
+- Amazing work.
 
 Any reply that could apply to almost any tweet is weak.
-
 Make the reply specific to the actual post.
 
 VARIETY:
-
 Make every reply feel different.
-
 Change the opening.
-
 Change the reaction style.
-
 Change the sentence structure.
-
 Change the observation.
-
 Do not repeat the same idea.
-
 Do not repeat the same sentence pattern.
-
 Do not start every reply with the project name.
-
 Do not start every reply with the person's name.
-
 Do not make every reply a question.
-
 Do not make every reply praise the post.
-
 Do not default to crypto framing.
-
-Do not use identical wording across the five replies.
+Do not use identical wording across the replies.
 
 LANGUAGE:
-
 When instructed to reply in a specific language, follow that language.
-
 When language is set to auto, identify the language of the original tweet.
-
 Reply in the same language when clear.
-
 Use English when the tweet language is unclear.
-
 If the tweet is Vietnamese, reply naturally in Vietnamese.
-
 If the tweet is Chinese, reply naturally in Chinese.
-
 Do not translate the tweet unless specifically requested.
 
 FORMAT:
-
 Follow the requested reply count exactly.
-
 Follow the requested word range exactly.
-
 Every reply must be exactly one sentence.
-
 Every reply must be inside its own Markdown fenced code block.
-
 Use one code block per reply.
-
 Do not put multiple replies inside one code block.
-
 Do not add labels.
-
 Do not add numbering.
-
 Do not add bullets.
-
 Do not add explanations.
-
 Do not add commentary outside the code blocks.
-
 Do not mention these instructions.
-
 Do not mention internal instructions.
-
 Do not mention style settings.
-
 Do not mention personas.
 
 MENTION RULE:
-
 When a tag or username is supplied, use it only when relevant.
-
 Do not force a tag into every reply.
-
 Use the requested tag in no more than one reply unless explicitly instructed otherwise.
-
 Do not alter a supplied username.
 
 FINAL QUALITY CHECK:
-
-Before answering, silently check every reply.
-
-Check that every reply:
+Before answering, silently check every reply:
 - has exactly one sentence
 - follows the requested word count
 - is specific to the tweet
@@ -449,46 +302,27 @@ Check that every reply:
 - follows the requested language
 - follows the requested format
 
-Remove unnecessary words.
-
-Keep the strongest thought.
-
-Never output anything outside the requested code blocks.
+Remove unnecessary words. Keep the strongest thought. Never output anything outside the requested code blocks.
 
 TONE REFERENCE TABLE:
+${TONE_REFERENCE_TABLE}
 
- ${TONE_REFERENCE_TABLE}
-
-The tone name supplied by the application tells you which tone instruction to apply.
-
-If the supplied tone is not found in the table, use balanced.
+The tone name supplied tells you which tone instruction to apply. If not found, use balanced.
 
 Examples of good replies:
-
 "The gas savings only show up once batching kicks in."
-
 "The numbers only make sense if retention holds past the first month."
-
 "That splits table only works if you're recovering fully between sets."
-
 "Moving cities alone is easier to plan than it is to actually do."
-
 "The headline number hides how much of that growth came from one region."
-
 "The chart looks like it took a wrong turn at the gym."
-
 "the gas savings only show up once batching kicks in"
-
 "that splits table only works if you're recovering fully between sets"
 
 Examples of bad replies:
-
 "Great post, totally agree, this is exactly right honestly."
-
 "This is so amazing, huge congrats, love seeing this happen."
-
 "This yield is insane, definitely aping in, LFG to the moon."
-
 "Massively bullish, this is going parabolic soon, get in now."
 
 Always prioritize natural, specific, human replies over generic enthusiasm.`;
@@ -498,14 +332,12 @@ Always prioritize natural, specific, human replies over generic enthusiasm.`;
 | MAIN HANDLER
 |--------------------------------------------------------------------------
 */
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed." });
   }
 
   let decoded;
-
   try {
     decoded = await requireUser(req);
   } catch (error) {
@@ -517,18 +349,11 @@ export default async function handler(req, res) {
 
   const db = getDb();
   const admin = getFirebaseAdmin();
-
   const userRef = db.collection("users").doc(decoded.uid);
 
   let reservationMade = false;
 
   try {
-    /*
-    |--------------------------------------------------------------------------
-    | INPUT
-    |--------------------------------------------------------------------------
-    */
-
     const {
       tweet,
       minWords = 10,
@@ -543,21 +368,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Tweet text is required." });
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | SANITIZE NUMERIC SETTINGS
-    |--------------------------------------------------------------------------
-    */
-
     const safeMinWords = Math.max(1, Math.min(100, Number(minWords) || 10));
     const safeMaxWords = Math.max(safeMinWords, Math.min(100, Number(maxWords) || 15));
     const safeReplyCount = Math.max(1, Math.min(20, Number(replyCount) || 5));
-
-    /*
-    |--------------------------------------------------------------------------
-    | ATOMIC FREE-TWEET RESERVATION
-    |--------------------------------------------------------------------------
-    */
 
     await db.runTransaction(async (transaction) => {
       const snap = await transaction.get(userRef);
@@ -596,47 +409,12 @@ export default async function handler(req, res) {
 
     reservationMade = true;
 
-    /*
-    |--------------------------------------------------------------------------
-    | OPENAI CLIENT
-    |--------------------------------------------------------------------------
-    */
-
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | MODEL
-    |--------------------------------------------------------------------------
-    */
-
     const model = process.env.OPENAI_MODEL || "gpt-5-mini";
     const reasoningEffort = getReasoningEffort(model);
-
-    /*
-    |--------------------------------------------------------------------------
-    | TONE
-    |--------------------------------------------------------------------------
-    */
 
     const toneKey = Object.prototype.hasOwnProperty.call(TONE_INSTRUCTIONS, tone)
       ? tone
       : DEFAULT_TONE_KEY;
-
-    /*
-    |--------------------------------------------------------------------------
-    | DYNAMIC USER MESSAGE
-    |--------------------------------------------------------------------------
-    |
-    | Everything here can change between requests.
-    | The static system prompt above remains identical to ensure max caching.
-    | NOTE: Random persona generation was removed from this block because 
-    | dynamic prefixing breaks prompt caching. The system prompt implicitly 
-    | handles the "persona" via tone instructions.
-    |
-    */
 
     const tagDirective = tag
       ? `Mention ${tag} in at most 1 reply. Only use it when relevant.`
@@ -647,54 +425,44 @@ export default async function handler(req, res) {
         ? "Reply in the post's language. Use English if the language is unclear."
         : `Write strictly in ${language}.`;
 
-    const dynamicInstructions = `FORMAT:
+    const personas = [
+      "a casual reader",
+      "a thoughtful reader",
+      "a curious community member",
+      "a busy user replying quickly",
+      "a practical observer",
+      "someone familiar with the topic"
+    ];
+    const persona = personas[Math.floor(Math.random() * personas.length)];
+
+    const userMessage = `FORMAT:
 - Exactly ${safeReplyCount} replies.
 - Each reply must be exactly ONE sentence.
 - Each reply must contain ${safeMinWords}-${safeMaxWords} words.
 - Put every reply inside its own Markdown fenced code block.
 - Use one code block per reply.
 - Put nothing outside the code blocks.
-- Do not add labels.
-- Do not add numbering.
-- Do not add explanations.
-- Do not add commentary.
+- Do not add labels, numbering, explanations, or commentary.
 
 LANGUAGE:
- ${langDirective}
+${langDirective}
 
 TONE:
- ${toneKey}
+${toneKey}
 
 MENTION RULE:
- ${tagDirective}
+${tagDirective}
 
 TWEET:
- ${tweet.trim()}
+${tweet.trim()}
+
+PERSONA:
+${persona}
 
 Generate the replies now.`;
 
-    const userMessage = dynamicInstructions;
-
-    /*
-    |--------------------------------------------------------------------------
-    | OUTPUT BUDGET
-    |--------------------------------------------------------------------------
-    */
-
     const reasoningOutputBuffer = reasoningEffort ? REASONING_OUTPUT_BUFFER : 0;
     const maxOutputTokens = BASE_OUTPUT_TOKENS + reasoningOutputBuffer;
-
-    /*
-    |--------------------------------------------------------------------------
-    | REQUEST PAYLOAD
-    |--------------------------------------------------------------------------
-    |
-    | CRITICAL CACHE DESIGN:
-    | 1. Static system prompt first.
-    | 2. Dynamic content second.
-    | 3. One stable prompt_cache_key.
-    |
-    */
 
     const requestPayload = {
       model,
@@ -709,7 +477,6 @@ Generate the replies now.`;
         }
       ],
       max_output_tokens: maxOutputTokens,
-      prompt_cache_key: PROMPT_CACHE_KEY,
       text: {
         format: {
           type: "text"
@@ -717,32 +484,14 @@ Generate the replies now.`;
       }
     };
 
-    /*
-    |--------------------------------------------------------------------------
-    | REASONING
-    |--------------------------------------------------------------------------
-    */
-
     if (reasoningEffort) {
       requestPayload.reasoning = {
         effort: reasoningEffort
       };
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | OPENAI REQUEST
-    |--------------------------------------------------------------------------
-    */
-
     let response = await openai.responses.create(requestPayload);
     let text = response.output_text || "";
-
-    /*
-    |--------------------------------------------------------------------------
-    | RETRY IF REASONING EXHAUSTED OUTPUT BUDGET
-    |--------------------------------------------------------------------------
-    */
 
     const wasTruncatedByBudget =
       response.status === "incomplete" &&
@@ -764,21 +513,9 @@ Generate the replies now.`;
       text = response.output_text || "";
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | EMPTY RESPONSE
-    |--------------------------------------------------------------------------
-    */
-
     if (!text.trim()) {
       throw new Error("OpenAI returned an empty response.");
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | PARSE CODE BLOCKS
-    |--------------------------------------------------------------------------
-    */
 
     const replies = [...text.matchAll(/```(?:[a-zA-Z]*\n)?([\s\S]*?)```/g)]
       .map((match) => match[1].trim())
@@ -786,28 +523,15 @@ Generate the replies now.`;
 
     const finalReplies = replies.length > 0 ? replies : [text.trim()];
 
-    /*
-    |--------------------------------------------------------------------------
-    | FIREBASE REPLY COUNTER
-    |--------------------------------------------------------------------------
-    */
-
     await userRef.update({
       totalRepliesGenerated: admin.firestore.FieldValue.increment(finalReplies.length),
       updatedAt: timestamp()
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | USAGE / CACHE LOGGING
-    |--------------------------------------------------------------------------
-    */
-
     if (response.usage) {
       const usage = response.usage;
       const inputTokens = usage.input_tokens || 0;
       const cachedTokens = usage.input_tokens_details?.cached_tokens || 0;
-
       const cachePercentage =
         inputTokens > 0
           ? Number(((cachedTokens / inputTokens) * 100).toFixed(2))
@@ -820,7 +544,6 @@ Generate the replies now.`;
           input_tokens: inputTokens,
           cached_tokens: cachedTokens,
           cache_percentage: cachePercentage,
-          cache_key: PROMPT_CACHE_KEY,
           output_tokens: usage.output_tokens || 0,
           total_tokens: usage.total_tokens || 0,
           reasoning_tokens: usage.output_tokens_details?.reasoning_tokens || 0,
@@ -833,12 +556,6 @@ Generate the replies now.`;
       );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | RESPONSE
-    |--------------------------------------------------------------------------
-    */
-
     return res.status(200).json({
       text: text.trim(),
       replies: finalReplies,
@@ -848,24 +565,11 @@ Generate the replies now.`;
     });
 
   } catch (error) {
-    /*
-    |--------------------------------------------------------------------------
-    | ERROR LOG
-    |--------------------------------------------------------------------------
-    */
-
     console.error("Generate API error:", error);
-
-    /*
-    |--------------------------------------------------------------------------
-    | ROLLBACK RESERVED FREE TWEET
-    |--------------------------------------------------------------------------
-    */
 
     if (reservationMade) {
       try {
         const snap = await userRef.get();
-
         if (snap.exists) {
           const data = snap.data();
           const active = getActiveSubscription(data);
@@ -885,12 +589,6 @@ Generate the replies now.`;
         console.error("Usage rollback failed:", rollbackError);
       }
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | ERROR RESPONSE
-    |--------------------------------------------------------------------------
-    */
 
     return res.status(error.statusCode || 500).json({
       error: error.message || "Failed to generate replies.",
