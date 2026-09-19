@@ -15,19 +15,37 @@ const tones = {
   balanced: "Keep it natural, simple, and conversational."
 };
 
+const DEFAULT_TONE_KEY = "balanced";
+
+// Rendered once into the STATIC system prompt below as a fixed reference
+// table. Per-request, only the tone's NAME travels in the dynamic block
+// ("TONE: casual") instead of its full instruction text — the model looks
+// the name up in this table. This keeps the tone directive's actual prose
+// out of the varying part of the prompt, so switching tones between callers
+// no longer changes the system message's bytes at all.
+const TONE_REFERENCE_TABLE = Object.entries(tones)
+  .map(([key, instruction]) => `- ${key}: ${instruction}`)
+  .join("\n");
+
 // Models that accept the `reasoning` parameter on /v1/responses.
 // gpt-4o / gpt-4o-mini do NOT support it and will 400 if it's sent.
-// Add/remove entries here as you switch OPENAI_MODEL.
-const REASONING_MODELS = new Set([
+// Add/remove FAMILY PREFIXES here as you switch OPENAI_MODEL. OPENAI_MODEL
+// is often set to a dated snapshot string (e.g. "gpt-5.4-nano-2026-03-17"),
+// which would never match a Set of bare family names, so this checks
+// whether the configured model STARTS WITH one of these prefixes instead.
+const REASONING_MODEL_PREFIXES = [
   "gpt-5.4-nano",
   "gpt-5.4-mini",
   "gpt-5-nano",
   "gpt-5-mini",
   "o1",
-  "o1-mini",
-  "o3",
-  "o3-mini"
-]);
+  "o3"
+];
+
+function supportsReasoningParam(model) {
+  if (!model) return false;
+  return REASONING_MODEL_PREFIXES.some((prefix) => model.startsWith(prefix));
+}
 
 // A fixed label for OpenAI's prompt-cache routing. All requests to this
 // endpoint share the same static system prompt, so using one constant key
@@ -68,7 +86,9 @@ ONE SENTENCE RULE (STRICT, NO EXCEPTIONS):
 - Every reply must be exactly one complete sentence.
 - Never write two sentences in one reply, even short ones.
 - Never separate two thoughts with a period inside the same reply.
-- One full stop at the end, and nowhere else.
+- At most one full stop, and only at the very end, never in the middle.
+- See CASING AND PUNCTUATION VARIETY below for when the ending full stop
+  should be left off entirely.
 - If a second thought feels needed, cut it and keep only the strongest one.
 
 STYLE:
@@ -84,6 +104,20 @@ STYLE:
 - Do not invent facts.
 - Do not over-explain.
 - Do not sound overly polished.
+
+CASING AND PUNCTUATION VARIETY:
+- Real people typing quick replies do not always capitalize the first
+  letter and do not always close with a period, so vary this across the
+  set of replies instead of applying the same style to every one.
+- Some replies should start with a lowercase letter instead of a capital.
+- Some replies should end with no punctuation at all, no closing period.
+- Do not apply lowercase starts or missing end punctuation to every reply
+  in the set. Mix it in across the replies. Several replies can still look
+  fully standard, capitalized and closing with a period.
+- Only the first letter and the final full stop are affected by this. Every
+  other capitalization rule (proper nouns, acronyms, "I") and all internal
+  punctuation stay normal and correct.
+- Never drop a full stop mid-word or mid-sentence, only at the very end.
 
 STRICT SENTENCE RULES:
 - Use simple sentences only, one idea per sentence.
@@ -126,6 +160,8 @@ EXAMPLE REPLIES (different topics, each exactly one sentence):
 - Good: "Moving cities alone is easier to plan than it is to actually do."
 - Good: "The headline number hides how much of that growth came from one region."
 - Good: "The chart looks like it took a wrong turn at the gym."
+- Good (lowercase start, no closing period): "the gas savings only show up once batching kicks in"
+- Good (lowercase start, no closing period): "that splits table only works if you're recovering fully between sets"
 - Bad: "This is so amazing, huge congrats, love seeing this happen."
 - Bad: "Great post, totally agree, this is exactly right honestly."
 - Bad: "This yield is insane, definitely aping in, LFG to the moon."
@@ -142,11 +178,18 @@ COMMON MISTAKES TO AVOID:
 - Do not write more than one sentence, ever, for any reply.
 
 FINAL CHECK:
-Before answering, confirm each reply is exactly one sentence with one full
-stop, and that it responds to what this specific tweet actually said.
+Before answering, confirm each reply is exactly one sentence, follows the
+CASING AND PUNCTUATION VARIETY rules, and responds to what this specific
+tweet actually said.
 Remove any second sentence, unnecessary words, or complex structure.
 Make the replies sound like a real person, not a bot.
-Never use the em dash character "—".`;
+Never use the em dash character "—".
+
+TONE REFERENCE TABLE:
+Each request's dynamic block below will name one tone by key. Look up its
+instruction here and apply it. If the named key is not in this table, fall
+back to "balanced".
+${TONE_REFERENCE_TABLE}`;
 
 function timestampToDate(value) {
   if (!value) return null;
@@ -267,8 +310,13 @@ export default async function handler(req, res) {
       apiKey: process.env.OPENAI_API_KEY
     });
 
-    const toneDirective =
-      tones[tone] || "Keep it natural, simple, and conversational.";
+    // Resolve to a known tone key (falls back to the default) so we only
+    // ever send a short NAME across the wire, never the tone's full
+    // instruction text — that text already lives in the static system
+    // prompt's TONE REFERENCE TABLE, so the model looks it up there instead.
+    const toneKey = Object.prototype.hasOwnProperty.call(tones, tone)
+      ? tone
+      : DEFAULT_TONE_KEY;
 
     const tagDirective = tag
       ? `Mention ${tag} in at most 1 reply. Only use it when relevant.`
@@ -293,13 +341,29 @@ export default async function handler(req, res) {
     const persona = personas[Math.floor(Math.random() * personas.length)];
 
     // ---------------------------------------------------------------------
-    // Everything that varies per-request is appended AFTER the static block,
-    // never interleaved with it, so the long static prefix stays
-    // byte-identical across calls and remains cacheable.
+    // CACHING: the system prompt is ALWAYS exactly STATIC_SYSTEM_PROMPT,
+    // byte-for-byte, on every request — no per-request values are appended
+    // to it. Every setting that can differ between callers (tone, reply
+    // count, word counts, language, tag) instead travels in the trailing
+    // user message below.
+    //
+    // This matters most on gpt-5.4-nano: OpenAI has confirmed nano needs a
+    // longer identical prefix than other models in this family before a
+    // cache hit registers at all, and a shared prefix that changes bytes
+    // whenever one caller picks a different tone or reply count never gets
+    // the chance to build up hits across callers in the first place. Moving
+    // all variability after the fixed prefix, and keeping that fixed prefix
+    // as large as possible (see the TONE REFERENCE TABLE folded into
+    // STATIC_SYSTEM_PROMPT above), is the most this app can do — nano's
+    // actual cache threshold isn't publicly documented, so treat this as
+    // "maximizes the odds," not "guarantees a hit." Watch real
+    // response.usage.input_tokens_details.cached_tokens values in your logs
+    // to see whether it's landing; if it still doesn't, gpt-5.4-mini is the
+    // model OpenAI itself points to for workloads that depend on caching.
     // ---------------------------------------------------------------------
-    const dynamicInstructions = `
+    const systemPrompt = STATIC_SYSTEM_PROMPT;
 
-FORMAT:
+    const dynamicInstructions = `FORMAT:
 - Exactly ${replyCount} replies.
 - Each reply must be exactly ONE sentence, ${minWords}-${maxWords} words total.
 - Put every reply inside its own Markdown fenced code block.
@@ -314,14 +378,15 @@ LANGUAGE:
 ${langDirective}
 
 TONE:
-${toneDirective}
+${toneKey}
 
 MENTION RULE:
 ${tagDirective}`;
 
-    const systemPrompt = STATIC_SYSTEM_PROMPT + dynamicInstructions;
+    const userMessage = `${dynamicInstructions}
 
-    const userMessage = `${tweet.trim()}
+TWEET:
+${tweet.trim()}
 Write the replies now.
 Understand what this tweet is actually about before replying.
 Reply to its real content and topic, whatever that topic is.
@@ -352,7 +417,7 @@ Never mention the voice hint.`;
 
     // Only attach `reasoning` for models that actually support it.
     // gpt-4o / gpt-4o-mini reject the request with a 400 if it's present.
-    if (REASONING_MODELS.has(model)) {
+    if (supportsReasoningParam(model)) {
       requestPayload.reasoning = { effort: "low" };
     }
 
