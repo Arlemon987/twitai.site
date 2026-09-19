@@ -78,19 +78,24 @@ const RETRY_OUTPUT_TOKEN_INCREASE = 1500;
 //
 // SHARDING: a single prompt_cache_key is one lane on OpenAI's side, and per
 // OpenAI's own docs that lane starts dropping cache hits once combined
-// traffic on it exceeds roughly 15 requests/minute -- at that point ANY
-// concurrent request (regardless of its tone/format settings, regardless of
-// which user sent it) can push the lane over capacity and knock later
-// requests on that same key back to a cold machine. Since every request's
-// system prompt is byte-identical no matter who sent it, splitting traffic
-// across several keys is safe: each shard warms up independently and serves
-// hits once it's seen a couple of requests, and the effective combined
-// capacity becomes roughly SHARD_COUNT x 15/min instead of one shared 15/min
-// ceiling for the whole app. Raise SHARD_COUNT if you're seeing this at
-// higher volume; each additional shard trades a bit of hit-rate efficiency
-// (more machines each holding their own warm copy) for more total headroom.
+// traffic on it exceeds roughly 15 requests/minute. Splitting traffic
+// across several keys is safe when you're actually near that ceiling, since
+// every request's system prompt is byte-identical no matter who sent it --
+// but sharding is a straight trade: each additional shard divides your
+// traffic thinner, so at LOW volume it does more harm than good. Each shard
+// only stays warm if it sees requests often enough; split 3 req/min across
+// 4 shards and each one averages under 1 req/min, so most requests roll a
+// shard that's gone cold since its last hit, and the hit rate ends up worse
+// than a single shared key would have gotten at that same volume. Default
+// is 1 (a single key, same as before sharding existed) for exactly that
+// reason -- only raise PROMPT_CACHE_SHARD_COUNT once your logged
+// requests/minute for this endpoint is actually approaching ~15, or once
+// you're seeing hits collapse under real concurrent bursts. Watch
+// response.usage.input_tokens_details.cached_tokens in your logs before and
+// after any change here; that's the only reliable signal of whether a given
+// shard count is helping.
 const PROMPT_CACHE_KEY_BASE = "twitai-generate-v3";
-const PROMPT_CACHE_SHARD_COUNT = Number(process.env.PROMPT_CACHE_SHARD_COUNT) || 4;
+const PROMPT_CACHE_SHARD_COUNT = Number(process.env.PROMPT_CACHE_SHARD_COUNT) || 1;
 
 function pickPromptCacheKey() {
   const shard = Math.floor(Math.random() * PROMPT_CACHE_SHARD_COUNT);
