@@ -110,6 +110,11 @@ CONTENT:
 - Keep skepticism natural when it fits, without being negative for no reason.
 - Questions are allowed when they feel natural, but do not force them.
 
+
+QUESTION REPLY RULE:
+- Include a natural question in some replies when the tweet genuinely invites discussion, but never force a question into every reply.
+- Keep questions specific to the tweet and ask something the author could realistically answer.
+
 AVOID GENERIC REPLIES:
 - "Great post", "Exactly", "Well said", "This is huge", "Love this",
   "So true", "Game changer", "Revolutionary", "Bullish", "LFG", or any
