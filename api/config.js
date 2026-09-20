@@ -3,7 +3,7 @@
 // to make manual crypto payments.
 
 export const PAYMENT_CONFIG = {
-  network: "BSC-BNB SMART CHAIN",
+  network: "BNB SMART CHAIN || ETHEREUM MAIN CHAIN || BASE || ARBITRUM",
 
   wallet: "0xEd0705Eab4eD0579466FF7aFF6B3adB7131F1868",
 
