@@ -19,6 +19,7 @@ const tones = {
 // gpt-4o / gpt-4o-mini do NOT support it and will 400 if it's sent.
 // Add/remove entries here as you switch OPENAI_MODEL.
 const REASONING_MODELS = new Set([
+  "gpt-5.6-luna",
   "gpt-5.4-nano",
   "gpt-5.4-mini",
   "gpt-5-nano",
