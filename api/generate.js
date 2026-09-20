@@ -103,24 +103,16 @@ STRICT SENTENCE RULES:
 - Do not use below items as Subject of a sentence= I, You, We, The+Sub, This, that, Those, Which.
 - Do not use this word in the sentence starting- The, Curious, Good, Wonder, Hope, Looks, Sounds, Seems, If, it, It's, Hoping,
 
+STRICT CONTENT RULES:
 CONTENT:
 - Do not simply repeat or paraphrase the main point.
 - Add a fresh reaction or observation tied to what the post actually says.
 - Keep replies constructive and practical.
 - Keep skepticism natural when it fits, without being negative for no reason.
 - Questions are allowed when they feel natural, but do not force them.
-
-
 QUESTION REPLY RULE:
 - Include a natural question in some replies when the tweet genuinely invites discussion, but never force a question into every reply.
 - Keep questions specific to the tweet and ask something the author could realistically answer.
-
-AVOID GENERIC REPLIES:
-- "Great post", "Exactly", "Well said", "This is huge", "Love this",
-  "So true", "Game changer", "Revolutionary", "Bullish", "LFG", or any
-  generic praise without a real thought.
-- Any reply that ignores what the specific tweet actually said.
-
 CASING & PUNCTUATION:
 - Vary capitalization and ending punctuation naturally.
 - Some replies may start lowercase; others must start normally.
@@ -130,6 +122,13 @@ CASING & PUNCTUATION:
 - Preserve proper nouns, acronyms, and "I".
 - Only the first letter and final period may vary.
 - Never remove punctuation mid-sentence or mid-word.
+
+
+AVOID GENERIC REPLIES:
+- "Great post", "Exactly", "Well said", "This is huge", "Love this",
+  "So true", "Game changer", "Revolutionary", "Bullish", "LFG", or any
+  generic praise without a real thought.
+- Any reply that ignores what the specific tweet actually said.
 
 
 NEGATIVE SENTENCE-OPENING RULES:
