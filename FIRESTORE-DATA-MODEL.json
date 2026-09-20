@@ -1,0 +1,33 @@
+{
+  "usageDaily/{uid}_{YYYY-MM-DD}": {
+    "uid": "firebase-user-uid",
+    "email": "user@example.com",
+    "date": "2026-09-18",
+    "tweets": 12,
+    "replies": 60,
+    "requestCount": 12,
+    "inputTokens": 18500,
+    "cachedInputTokens": 14200,
+    "actualInputTokens": 4300,
+    "outputTokens": 3100,
+    "totalTokens": 21600,
+    "updatedAt": "Firestore Timestamp",
+    "expiresAt": "Firestore Timestamp"
+  },
+  "generationLogs/{auto-id}": {
+    "uid": "firebase-user-uid",
+    "email": "user@example.com",
+    "date": "2026-09-18",
+    "createdAt": "Firestore Timestamp",
+    "tweetText": "Original submitted tweet",
+    "tweets": 1,
+    "replies": 5,
+    "model": "configured OpenAI model",
+    "inputTokens": 1420,
+    "cachedInputTokens": 1050,
+    "actualInputTokens": 370,
+    "outputTokens": 185,
+    "totalTokens": 1605,
+    "expiresAt": "Firestore Timestamp"
+  }
+}

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twit AI Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { font-family:'Plus Jakarta Sans',sans-serif;background:#070a12;color:#f1f5f9; }
+    .glass { background:rgba(13,20,36,.78);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08); }
+  </style>
+</head>
+<body class="min-h-screen bg-[#070a12]">
+<header class="border-b border-slate-800 bg-[#090d16]/90 sticky top-0 z-20">
+  <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+    <div><div class="text-lg font-black">Twit AI Admin</div><div id="adminEmail" class="text-[10px] text-slate-500"></div></div>
+    <button id="logoutBtn" class="px-3 py-2 rounded-xl bg-slate-800 text-xs text-slate-300 hover:text-white">Logout</button>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto p-4 md:p-6">
+  <div id="loginBox" class="min-h-[70vh] flex items-center justify-center">
+    <div class="glass rounded-3xl p-8 max-w-sm w-full text-center">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 text-2xl mb-4"><i class="fa-solid fa-lock"></i></div>
+      <h1 class="text-xl font-bold mb-2">Admin Login</h1>
+      <p class="text-xs text-slate-500 mb-6">Sign in with the configured admin Gmail account.</p>
+      <button id="loginBtn" class="w-full py-3 rounded-xl bg-white text-slate-900 font-semibold text-sm"><i class="fa-brands fa-google mr-2"></i> Sign in with Google</button>
+    </div>
+  </div>
+
+  <div id="dashboard" class="hidden space-y-6">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div class="glass rounded-2xl p-4"><div class="text-[10px] text-slate-500">Users</div><div id="statUsers" class="text-2xl font-bold mt-1">0</div></div>
+      <div class="glass rounded-2xl p-4"><div class="text-[10px] text-slate-500">Active Subs</div><div id="statSubs" class="text-2xl font-bold mt-1">0</div></div>
+      <div class="glass rounded-2xl p-4"><div class="text-[10px] text-slate-500">Free Users</div><div id="statFree" class="text-2xl font-bold mt-1">0</div></div>
+      <div class="glass rounded-2xl p-4"><div class="text-[10px] text-slate-500">Pending</div><div id="statPending" class="text-2xl font-bold mt-1">0</div></div>
+      <div class="glass rounded-2xl p-4"><div class="text-[10px] text-slate-500">All Tweets</div><div id="statTweets" class="text-2xl font-bold mt-1">0</div></div>
+      <div class="glass rounded-2xl p-4"><div class="text-[10px] text-slate-500">All Replies</div><div id="statReplies" class="text-2xl font-bold mt-1">0</div></div>
+    </div>
+
+    <section class="glass rounded-3xl p-5">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div><h2 class="font-bold">OpenAI Usage Analytics</h2><p class="text-[10px] text-slate-500 mt-1">Last 30 days · Asia/Dhaka · server-side usage from OpenAI responses.</p></div>
+        <div class="flex gap-2">
+          <select id="userFilter" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200"><option value="">All users</option></select>
+          <button id="analyticsRefresh" class="px-3 py-2 rounded-xl bg-slate-800 text-xs">Refresh</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 mt-5">
+        <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-[9px] text-slate-500">Tweets</div><div id="aTweets" class="text-lg font-bold">0</div></div>
+        <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-[9px] text-slate-500">Replies</div><div id="aReplies" class="text-lg font-bold">0</div></div>
+        <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-[9px] text-slate-500">Input</div><div id="aInput" class="text-lg font-bold">0</div></div>
+        <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-[9px] text-slate-500">Cached</div><div id="aCached" class="text-lg font-bold text-emerald-400">0</div></div>
+        <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-[9px] text-slate-500">Actual Input</div><div id="aActual" class="text-lg font-bold text-sky-400">0</div></div>
+        <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-[9px] text-slate-500">Output</div><div id="aOutput" class="text-lg font-bold">0</div></div>
+        <div class="rounded-xl bg-slate-900/70 p-3"><div class="text-[9px] text-slate-500">Total</div><div id="aTotal" class="text-lg font-bold">0</div></div>
+      </div>
+
+      <div class="mt-5 overflow-x-auto rounded-xl border border-slate-800">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-950/70 text-slate-500">
+            <tr><th class="p-3">Date</th><th class="p-3">Tweets</th><th class="p-3">Replies</th><th class="p-3">Input</th><th class="p-3">Cached</th><th class="p-3">Actual</th><th class="p-3">Output</th><th class="p-3">Total</th></tr>
+          </thead>
+          <tbody id="analyticsDailyBody"></tbody>
+        </table>
+      </div>
+
+      <div class="mt-5 overflow-x-auto rounded-xl border border-slate-800">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-950/70 text-slate-500">
+            <tr><th class="p-3">User</th><th class="p-3">Tweets</th><th class="p-3">Replies</th><th class="p-3">Cached</th><th class="p-3">Actual Input</th><th class="p-3">Output</th><th class="p-3">Total Tokens</th></tr>
+          </thead>
+          <tbody id="analyticsUsersBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="glass rounded-3xl overflow-hidden">
+      <div class="p-5 border-b border-slate-800 flex items-center justify-between"><div><h2 class="font-bold">Pending Payments</h2><p class="text-[10px] text-slate-500 mt-1">Verify the transaction manually before approving.</p></div><button id="refreshBtn" class="px-3 py-2 rounded-xl bg-slate-800 text-xs">Refresh</button></div>
+      <div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead class="bg-slate-950/50 text-slate-500"><tr><th class="p-4">User</th><th class="p-4">Plan</th><th class="p-4">Network</th><th class="p-4">Amount</th><th class="p-4">Transaction</th><th class="p-4">Action</th></tr></thead><tbody id="requestsBody"></tbody></table></div>
+    </section>
+
+    <section class="glass rounded-3xl overflow-hidden">
+      <div class="p-5 border-b border-slate-800"><h2 class="font-bold">Users</h2><p class="text-[10px] text-slate-500 mt-1">Click View Analytics to inspect that user's last 30 days.</p></div>
+      <div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead class="bg-slate-950/50 text-slate-500"><tr><th class="p-4">User</th><th class="p-4">Status</th><th class="p-4">Plan</th><th class="p-4">Free Usage</th><th class="p-4">Total Tweets</th><th class="p-4">Replies</th><th class="p-4">Expiry</th><th class="p-4">Analytics</th></tr></thead><tbody id="usersBody"></tbody></table></div>
+    </section>
+  </div>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyAgPi6rbLwIRNWHzNB1u_P82rBEVEmKTlY",
+  authDomain:"auth.twitai.app",
+  projectId:"twit-ai",
+  storageBucket:"twit-ai.firebasestorage.app",
+  messagingSenderId:"444927859336",
+  appId:"1:444927859336:web:c51fd0a476d9b32bc79d3d"
+};
+const app=initializeApp(firebaseConfig), auth=getAuth(app), provider=new GoogleAuthProvider();
+const $=id=>document.getElementById(id);
+const esc=value=>{const d=document.createElement("div");d.textContent=value??"";return d.innerHTML};
+const fmt=n=>Number(n||0).toLocaleString();
+const dateLabel=s=>s ? new Date(`${s}T12:00:00+06:00`).toLocaleDateString(undefined,{day:"2-digit",month:"short",year:"numeric"}) : "-";
+
+async function api(url,options={}) {
+  const user=auth.currentUser; if(!user) throw new Error("Not signed in.");
+  const token=await user.getIdToken();
+  const r=await fetch(url,{...options,headers:{...(options.headers||{}),"Content-Type":"application/json","Authorization":`Bearer ${token}`}});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(data.error||"Request failed.");
+  return data;
+}
+function explorerUrl(network,hash){
+  const n=(network||"").toLowerCase();
+  if(n.includes("base")) return `https://basescan.org/tx/${encodeURIComponent(hash)}`;
+  if(n.includes("ethereum")||n==="eth") return `https://etherscan.io/tx/${encodeURIComponent(hash)}`;
+  if(n.includes("bsc")||n.includes("bnb")) return `https://bscscan.com/tx/${encodeURIComponent(hash)}`;
+  return "#";
+}
+function setAnalytics(a){
+  const t=a.totals||{};
+  $("aTweets").textContent=fmt(t.tweets); $("aReplies").textContent=fmt(t.replies);
+  $("aInput").textContent=fmt(t.inputTokens); $("aCached").textContent=fmt(t.cachedInputTokens);
+  $("aActual").textContent=fmt(t.actualInputTokens); $("aOutput").textContent=fmt(t.outputTokens); $("aTotal").textContent=fmt(t.totalTokens);
+  $("analyticsDailyBody").innerHTML=(a.daily||[]).slice().reverse().map(d=>`
+    <tr class="border-t border-slate-800/70">
+      <td class="p-3 text-slate-300">${dateLabel(d.date)}</td><td class="p-3">${fmt(d.tweets)}</td><td class="p-3">${fmt(d.replies)}</td>
+      <td class="p-3">${fmt(d.inputTokens)}</td><td class="p-3 text-emerald-400">${fmt(d.cachedInputTokens)}</td>
+      <td class="p-3 text-sky-400">${fmt(d.actualInputTokens)}</td><td class="p-3">${fmt(d.outputTokens)}</td><td class="p-3 font-semibold">${fmt(d.totalTokens)}</td>
+    </tr>`).join("");
+  $("analyticsUsersBody").innerHTML=(a.users||[]).map(u=>`
+    <tr class="border-t border-slate-800/70">
+      <td class="p-3"><div class="font-semibold text-white">${esc(u.displayName||u.email)}</div><div class="text-[9px] text-slate-500">${esc(u.email)}</div></td>
+      <td class="p-3">${fmt(u.tweets)}</td><td class="p-3">${fmt(u.replies)}</td><td class="p-3 text-emerald-400">${fmt(u.cachedInputTokens)}</td>
+      <td class="p-3 text-sky-400">${fmt(u.actualInputTokens)}</td><td class="p-3">${fmt(u.outputTokens)}</td><td class="p-3 font-semibold">${fmt(u.totalTokens)}</td>
+    </tr>`).join("") || `<tr><td colspan="7" class="p-6 text-center text-slate-500">No usage yet.</td></tr>`;
+}
+async function loadAnalytics(){
+  const uid=$("userFilter").value;
+  const data=await api(`/api/admin?action=analytics${uid?`&uid=${encodeURIComponent(uid)}`:""}`);
+  setAnalytics(data.analytics);
+}
+async function loadDashboard(){
+  try{
+    const data=await api("/api/admin");
+    $("statUsers").textContent=data.stats.totalUsers; $("statSubs").textContent=data.stats.activeSubscribers;
+    $("statFree").textContent=data.stats.freeUsers; $("statPending").textContent=data.stats.pendingPayments;
+    $("statTweets").textContent=data.stats.totalTweetsSubmitted; $("statReplies").textContent=data.stats.totalRepliesGenerated;
+
+    const select=$("userFilter");
+    const previous=select.value;
+    select.innerHTML=`<option value="">All users</option>`+(data.users||[]).map(u=>`<option value="${esc(u.uid)}">${esc(u.email||u.displayName)}</option>`).join("");
+    if(data.users.some(u=>u.uid===previous)) select.value=previous;
+
+    const pending=data.requests.filter(r=>r.status==="pending");
+    $("requestsBody").innerHTML=pending.length?pending.map(r=>`
+      <tr class="border-t border-slate-800/70">
+        <td class="p-4"><div class="font-semibold text-white">${esc(r.email)}</div><div class="text-[9px] text-slate-600">${esc(r.uid)}</div></td>
+        <td class="p-4">${esc(r.planLabel)}</td><td class="p-4">${esc(r.network)}</td><td class="p-4">${esc(r.amount)}</td>
+        <td class="p-4"><a class="text-sky-400 break-all" target="_blank" rel="noopener" href="${explorerUrl(r.network,r.transactionHash)}">${esc(r.transactionHash)}</a></td>
+        <td class="p-4"><button data-action="approve" data-id="${esc(r.id)}" class="approve px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 mr-1">Approve</button>
+        <button data-action="reject" data-id="${esc(r.id)}" class="reject px-3 py-1.5 rounded-lg bg-rose-500/15 text-rose-300">Reject</button></td>
+      </tr>`).join(""):`<tr><td colspan="6" class="p-8 text-center text-slate-500">No pending payments.</td></tr>`;
+
+    $("usersBody").innerHTML=(data.users||[]).map(u=>`
+      <tr class="border-t border-slate-800/70">
+        <td class="p-4"><div class="flex items-center gap-2"><img src="${esc(u.photoURL)}" class="w-7 h-7 rounded-full" alt="">
+          <div><div class="font-semibold text-white">${esc(u.displayName||u.email)}</div><div class="text-[9px] text-slate-500">${esc(u.email)}</div></div></div></td>
+        <td class="p-4">${esc(u.subscriptionStatus)}</td><td class="p-4">${esc(u.planLabel)}</td><td class="p-4">${u.freeTweetsUsed} / 100</td>
+        <td class="p-4">${u.totalTweetsSubmitted}</td><td class="p-4">${u.totalRepliesGenerated}</td><td class="p-4">${u.subscriptionExpiry?dateLabel(u.subscriptionExpiry):"-"}</td>
+        <td class="p-4"><button data-user="${esc(u.uid)}" class="viewUser px-3 py-1.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-300">View</button></td>
+      </tr>`).join("");
+
+    document.querySelectorAll("[data-action]").forEach(btn=>btn.onclick=async()=>{
+      const action=btn.dataset.action, requestId=btn.dataset.id;
+      if(action==="approve"&&!confirm("Verify the transaction and approve this subscription?")) return;
+      if(action==="reject"&&!confirm("Reject this payment request?")) return;
+      btn.disabled=true;
+      try{await api("/api/admin",{method:"POST",body:JSON.stringify({action,requestId})});await loadDashboard();await loadAnalytics();}
+      catch(e){alert(e.message);btn.disabled=false;}
+    });
+    document.querySelectorAll(".viewUser").forEach(btn=>btn.onclick=async()=>{$("userFilter").value=btn.dataset.user;await loadAnalytics();window.scrollTo({top:0,behavior:"smooth"});});
+    await loadAnalytics();
+  }catch(e){
+    $("dashboard").innerHTML=`<div class="glass rounded-3xl p-8 text-center text-rose-300">${esc(e.message)}</div>`;
+  }
+}
+
+async function login(){
+  try{
+    const mobile=/iphone|ipad|ipod|android/i.test(navigator.userAgent);
+    if(mobile) await signInWithRedirect(auth,provider); else await signInWithPopup(auth,provider);
+  }catch(e){alert(e.message);}
+}
+$("loginBtn").onclick=login;
+$("logoutBtn").onclick=()=>signOut(auth);
+$("refreshBtn").onclick=loadDashboard;
+$("analyticsRefresh").onclick=loadAnalytics;
+$("userFilter").onchange=loadAnalytics;
+getRedirectResult(auth).catch(console.error);
+onAuthStateChanged(auth,async user=>{
+  if(!user){$("loginBox").classList.remove("hidden");$("dashboard").classList.add("hidden");$("adminEmail").textContent="";return;}
+  $("adminEmail").textContent=user.email||"";
+  $("loginBox").classList.add("hidden");$("dashboard").classList.remove("hidden");
+  await loadDashboard();
+});
+</script>
+</body>
+</html>
