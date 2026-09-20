@@ -115,13 +115,14 @@ QUESTION REPLY RULE:
 - Keep questions specific to the tweet and ask something the author could realistically answer.
 CASING & PUNCTUATION:
 - Vary capitalization and ending punctuation naturally.
-- Some replies may start lowercase; others must start normally.
-- Some replies may omit the final period; others should include it.
+- Some replies must start lowercase; others must start normally.
+- Some replies must omit the final period; others should include it.
 - Mix these styles across replies, never use one style for all.
 - Keep all internal capitalization and punctuation correct.
 - Preserve proper nouns, acronyms, and "I".
 - Only the first letter and final period may vary.
 - Never remove punctuation mid-sentence or mid-word.
+- follow this must...
 
 
 AVOID GENERIC REPLIES:
