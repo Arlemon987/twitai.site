@@ -239,7 +239,7 @@ Avoid phrases such as:
 - Huge.
 - Massive.
 - Amazing work.
-- Do not use at starting- NIce, Interesting, Happy, Good, I, It's, This, That, I+VERB....
+- Do not use at starting- Curious, NIce, Interesting, Happy, Good, I, It's, This, That, I+VERB...
 
 Any reply that could apply to almost any tweet is weak.
 Make the reply specific to the actual post.
