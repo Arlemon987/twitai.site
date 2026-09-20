@@ -11,25 +11,25 @@ export const PAYMENT_CONFIG = {
     month: {
       label: "1 Month",
       months: 1,
-      amount: "$3.5"
+      amount: "$4.90"
     },
 
     three_months: {
       label: "3 Months",
       months: 3,
-      amount: "$10"
+      amount: "$12.9"
     },
 
     six_months: {
       label: "6 Months",
       months: 6,
-      amount: "$18"
+      amount: "$24.9"
     },
 
     year: {
       label: "1 Year",
       months: 12,
-      amount: "$32"
+      amount: "$42.9"
     }
   }
 };
