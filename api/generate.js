@@ -71,7 +71,8 @@ ONE SENTENCE RULE (STRICT, NO EXCEPTIONS):
 - Every reply must be exactly one complete sentence.
 - Never write two sentences in one reply, even short ones.
 - Never separate two thoughts with a period inside the same reply.
-- One full stop at the end, and nowhere else.
+- Use only one sentence per reply.
+- A reply may end with a period or no punctuation.
 - If a second thought feels needed, cut it and keep only the strongest one.
 
 STYLE:
@@ -201,11 +202,12 @@ COMMON MISTAKES TO AVOID:
 - Do not write more than one sentence, ever, for any reply.
 
 FINAL CHECK:
-Before answering, confirm each reply is exactly one sentence with one full
-stop, and that it responds to what this specific tweet actually said.
-Remove any second sentence, unnecessary words, or complex structure.
-Make the replies sound like a real person, not a bot.
-Never use the em dash character "—".`;
+- Every reply must contain exactly one sentence.
+- Mix lowercase and uppercase starts across the reply set.
+- Mix replies ending with a period and replies ending with no punctuation.
+- Never make every reply use the same casing or ending style.
+- Never change internal punctuation or capitalization.
+- Never use the em dash character "—".`;
 
 function timestampToDate(value) {
   if (!value) return null;
