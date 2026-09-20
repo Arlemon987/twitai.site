@@ -100,6 +100,8 @@ STRICT SENTENCE RULES:
 - Avoid "so" when it creates a compound sentence.
 - If a second thought feels necessary, drop it. Keep only one sentence.
 - Never pack multiple thoughts into one sentence.
+- Do not use below items as Subject of a sentence= I, You, We, The+Sub, This, that, Those, Which.
+- Do not use this word in the sentence starting- Curious, Good, Wonder, Hope, Looks, Sounds, Seems.
 
 CONTENT:
 - Do not simply repeat or paraphrase the main point.
