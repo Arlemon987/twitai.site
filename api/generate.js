@@ -409,7 +409,7 @@ Never mention the voice hint.`;
         }
       ],
 
-      max_output_tokens: 400,
+      max_output_tokens: 1000,
 
       // Routing hint: groups all /api/generate requests under one cache key
       // so they're more likely to hit the same server that already holds
