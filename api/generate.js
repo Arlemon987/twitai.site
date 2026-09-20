@@ -36,6 +36,7 @@ const REASONING_MODELS = new Set([
 // STATIC_SYSTEM_PROMPT changes, so old and new prefixes don't get mixed
 // under the same key.
 const PROMPT_CACHE_KEY = "twitai-generate-v3";
+
 const TIME_ZONE = "Asia/Dhaka";
 
 // ---------------------------------------------------------------------------
@@ -197,24 +198,33 @@ function getDhakaDate(date = new Date()) {
     day: "2-digit"
   }).formatToParts(date);
 
-  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const map = Object.fromEntries(
+    parts.map((part) => [part.type, part.value])
+  );
+
   return `${map.year}-${map.month}-${map.day}`;
 }
 
 function getUsageMetrics(response) {
   const usage = response?.usage || {};
 
-  const inputTokens = Number(usage.input_tokens || 0);
-  const outputTokens = Number(usage.output_tokens || 0);
+  const inputTokens = Number(
+    usage.input_tokens || 0
+  );
+
+  const outputTokens = Number(
+    usage.output_tokens || 0
+  );
 
   const totalTokens = Number(
-    usage.total_tokens || (inputTokens + outputTokens)
+    usage.total_tokens ||
+    (inputTokens + outputTokens)
   );
 
   const cachedInputTokens = Number(
     usage.input_tokens_details?.cached_tokens ??
-      usage.inputTokensDetails?.cachedTokens ??
-      0
+    usage.inputTokensDetails?.cachedTokens ??
+    0
   );
 
   const actualInputTokens = Math.max(
@@ -231,15 +241,11 @@ function getUsageMetrics(response) {
   };
 }
 
-function getThirtyDayExpiry(admin) {
-  return admin.firestore.Timestamp.fromDate(
-    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-  );
-}
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed." });
+    return res.status(405).json({
+      error: "Method not allowed."
+    });
   }
 
   let decoded;
@@ -247,15 +253,25 @@ export default async function handler(req, res) {
   try {
     decoded = await requireUser(req);
   } catch (error) {
-    return res.status(error.statusCode || 401).json({
-      error: error.message || "Authentication failed.",
-      code: error.code || "AUTH_ERROR"
+    return res.status(
+      error.statusCode || 401
+    ).json({
+      error:
+        error.message ||
+        "Authentication failed.",
+
+      code:
+        error.code ||
+        "AUTH_ERROR"
     });
   }
 
   const db = getDb();
   const admin = getFirebaseAdmin();
-  const userRef = db.collection("users").doc(decoded.uid);
+
+  const userRef = db
+    .collection("users")
+    .doc(decoded.uid);
 
   let reservationMade = false;
 
@@ -294,7 +310,10 @@ export default async function handler(req, res) {
       const data = snap.data();
       const active = getActiveSubscription(data);
 
-      if (!active && (data.freeTweetsUsed || 0) >= FREE_LIMIT) {
+      if (
+        !active &&
+        (data.freeTweetsUsed || 0) >= FREE_LIMIT
+      ) {
         throw Object.assign(
           new Error(
             "Your 100 free tweet submissions are finished. Please subscribe to continue."
@@ -309,6 +328,7 @@ export default async function handler(req, res) {
       const updates = {
         totalTweetsSubmitted:
           admin.firestore.FieldValue.increment(1),
+
         updatedAt: timestamp()
       };
 
@@ -317,7 +337,10 @@ export default async function handler(req, res) {
           admin.firestore.FieldValue.increment(1);
       }
 
-      transaction.update(userRef, updates);
+      transaction.update(
+        userRef,
+        updates
+      );
     });
 
     reservationMade = true;
@@ -340,7 +363,9 @@ export default async function handler(req, res) {
         : `Write strictly in ${language}.`;
 
     const styleSeed =
-      Math.random().toString(36).slice(2, 10);
+      Math.random()
+        .toString(36)
+        .slice(2, 10);
 
     const personas = [
       "a casual reader",
@@ -352,7 +377,11 @@ export default async function handler(req, res) {
     ];
 
     const persona =
-      personas[Math.floor(Math.random() * personas.length)];
+      personas[
+        Math.floor(
+          Math.random() * personas.length
+        )
+      ];
 
     // ---------------------------------------------------------------------
     // Everything that varies per-request is appended AFTER the static block,
@@ -382,7 +411,8 @@ MENTION RULE:
 ${tagDirective}`;
 
     const systemPrompt =
-      STATIC_SYSTEM_PROMPT + dynamicInstructions;
+      STATIC_SYSTEM_PROMPT +
+      dynamicInstructions;
 
     const userMessage = `${tweet.trim()}
 Write the replies now.
@@ -393,7 +423,8 @@ Voice hint: ${persona}
 Never mention the style seed.
 Never mention the voice hint.`;
 
-    const model = process.env.OPENAI_MODEL;
+    const model =
+      process.env.OPENAI_MODEL;
 
     const requestPayload = {
       model,
@@ -414,7 +445,8 @@ Never mention the voice hint.`;
       // Routing hint: groups all /api/generate requests under one cache key
       // so they're more likely to hit the same server that already holds
       // the cached static prefix, instead of landing on a fresh machine.
-      prompt_cache_key: PROMPT_CACHE_KEY,
+      prompt_cache_key:
+        PROMPT_CACHE_KEY,
 
       // Keeps the cached prefix alive for up to 24h of inactivity instead of
       // the default 5-10 minute in-memory window, so gaps between users
@@ -432,9 +464,12 @@ Never mention the voice hint.`;
     }
 
     const response =
-      await openai.responses.create(requestPayload);
+      await openai.responses.create(
+        requestPayload
+      );
 
-    const text = response.output_text || "";
+    const text =
+      response.output_text || "";
 
     if (!text.trim()) {
       throw new Error(
@@ -447,7 +482,9 @@ Never mention the voice hint.`;
         /```(?:[a-zA-Z]*\n)?([\s\S]*?)```/g
       )
     ]
-      .map((match) => match[1].trim())
+      .map((match) =>
+        match[1].trim()
+      )
       .filter(Boolean);
 
     const finalReplies =
@@ -456,30 +493,29 @@ Never mention the voice hint.`;
         : [text.trim()];
 
     // ---------------------------------------------------------------
-    // NEW USAGE ANALYTICS
+    // USAGE ANALYTICS
     // ---------------------------------------------------------------
 
-    const usage = getUsageMetrics(response);
-    const date = getDhakaDate();
+    const usage =
+      getUsageMetrics(response);
+
+    const date =
+      getDhakaDate();
 
     // Daily aggregate:
     //
     // usageDaily/{uid}_{YYYY-MM-DD}
     //
-    // This makes the user and admin dashboards fast without scanning
-    // every individual generation record.
+    // Only lightweight daily statistics are stored.
+    // No tweet text and no generated replies are stored.
     const dailyRef = db
       .collection("usageDaily")
-      .doc(`${decoded.uid}_${date}`);
+      .doc(
+        `${decoded.uid}_${date}`
+      );
 
-    // Individual generation record retained for 30 days.
-    const logRef =
-      db.collection("generationLogs").doc();
-
-    const expiresAt =
-      getThirtyDayExpiry(admin);
-
-    const batch = db.batch();
+    const batch =
+      db.batch();
 
     // Update existing user totals.
     batch.update(userRef, {
@@ -487,6 +523,7 @@ Never mention the voice hint.`;
         admin.firestore.FieldValue.increment(
           finalReplies.length
         ),
+
       updatedAt: timestamp()
     });
 
@@ -498,7 +535,10 @@ Never mention the voice hint.`;
       dailyRef,
       {
         uid: decoded.uid,
-        email: decoded.email || "",
+
+        email:
+          decoded.email || "",
+
         date,
 
         // Tweet/generation count.
@@ -541,63 +581,15 @@ Never mention the voice hint.`;
             usage.totalTokens
           ),
 
-        updatedAt: timestamp(),
-
-        // Used by Firestore TTL.
-        expiresAt
+        updatedAt:
+          timestamp()
       },
       {
         merge: true
       }
     );
 
-    // ---------------------------------------------------------------
-    // INDIVIDUAL GENERATION LOG
-    // ---------------------------------------------------------------
-
-    batch.set(logRef, {
-      uid: decoded.uid,
-      email: decoded.email || "",
-
-      // Dhaka calendar date.
-      date,
-
-      // Exact generation timestamp.
-      createdAt: timestamp(),
-
-      // Original submitted tweet.
-      tweetText: tweet.trim(),
-
-      // One generation request = one tweet submission.
-      tweets: 1,
-
-      // Actual number of replies returned.
-      replies: finalReplies.length,
-
-      // OpenAI model used.
-      model,
-
-      // Token usage.
-      inputTokens:
-        usage.inputTokens,
-
-      cachedInputTokens:
-        usage.cachedInputTokens,
-
-      actualInputTokens:
-        usage.actualInputTokens,
-
-      outputTokens:
-        usage.outputTokens,
-
-      totalTokens:
-        usage.totalTokens,
-
-      // Used by Firestore TTL.
-      expiresAt
-    });
-
-    // Commit user totals + daily analytics + generation log together.
+    // Commit user totals + daily analytics together.
     await batch.commit();
 
     console.log(
@@ -622,7 +614,9 @@ Never mention the voice hint.`;
 
       usage: {
         tweets: 1,
-        replies: finalReplies.length,
+
+        replies:
+          finalReplies.length,
 
         date,
 
@@ -657,7 +651,8 @@ Never mention the voice hint.`;
           await userRef.get();
 
         if (snap.exists) {
-          const data = snap.data();
+          const data =
+            snap.data();
 
           const active =
             getActiveSubscription(data);
@@ -666,7 +661,8 @@ Never mention the voice hint.`;
             totalTweetsSubmitted:
               admin.firestore.FieldValue.increment(-1),
 
-            updatedAt: timestamp()
+            updatedAt:
+              timestamp()
           };
 
           if (!active) {
