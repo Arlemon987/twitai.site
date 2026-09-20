@@ -93,3 +93,1572 @@
 
     .glow-sky { box-shadow: 0 0 30px rgba(14,165,233,.25), 0 0 60px rgba(14,165,233,.1); }
     .gradient-text { background: linear-gradient(135deg,#38bdf8,#818cf8,#22d3ee); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+    .btn-gradient { background: linear-gradient(135deg,#0ea5e9,#6366f1); background-size: 200% 200%; animation: gradientShift 4s ease infinite; }
+    @keyframes gradientShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+
+    .pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+    @keyframes pulseGlow { 0%,100%{box-shadow:0 0 12px rgba(16,185,129,.5)} 50%{box-shadow:0 0 24px rgba(16,185,129,.8)} }
+
+    .shimmer { background: linear-gradient(90deg, rgba(51,65,85,.25) 25%, rgba(51,65,85,.55) 50%, rgba(51,65,85,.25) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+    @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+
+    .slide-in { animation: slideIn .35s cubic-bezier(.16,1,.3,1); }
+    @keyframes slideIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+    .scale-in { animation: scaleIn .25s cubic-bezier(.16,1,.3,1); }
+    @keyframes scaleIn { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
+
+    .spin { animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Reply card reveal, staggered */
+    .reply-card { animation: replyIn .4s cubic-bezier(.16,1,.3,1) both; }
+    @keyframes replyIn { from{opacity:0;transform:translateY(10px) scale(.98)} to{opacity:1;transform:translateY(0) scale(1)} }
+
+    @media (max-width: 767px) {
+      .glass { backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+      input, select, textarea { font-size: 16px !important; } /* stops iOS zoom-on-focus */
+    }
+
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 2px solid #38bdf8; outline-offset: 2px;
+    }
+
+    .smooth-scroll { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+
+    /* Respect the OS reduced-motion setting */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+      .bg-orb { animation: none !important; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-orbs">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+  <div class="grid-overlay"></div>
+
+  <div id="app" class="h-[100dvh] w-full flex overflow-hidden relative">
+
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-40 md:hidden transition-opacity duration-300"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" aria-label="Saved replies"
+      class="w-[85vw] max-w-[288px] flex-shrink-0 glass-strong flex flex-col fixed md:relative inset-y-0 left-0 z-50 -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out border-r border-slate-800/80 shadow-2xl md:shadow-none safe-top safe-left">
+
+      <div class="p-4 border-b border-slate-800/70 flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="relative w-10 h-10 flex-shrink-0">
+            <div class="absolute inset-0 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-cyan-400 blur-[6px] opacity-70"></div>
+            <div class="relative w-full h-full rounded-2xl bg-[#090d16] border border-sky-400/40 flex items-center justify-center">
+              <i class="fa-solid fa-comment-dots text-sky-400 text-lg"></i>
+            </div>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5">
+              <h1 class="text-lg font-black tracking-tight gradient-text">Twit AI</h1>
+              <span class="px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-400/30 text-[8px] font-bold text-sky-400">PRO</span>
+            </div>
+            <p class="text-[10px] text-slate-500 font-medium">Tweet reply generator</p>
+          </div>
+          <button id="closeSidebarBtn" aria-label="Close menu"
+            class="md:hidden w-8 h-8 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-white flex items-center justify-center active:scale-90 transition">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <button id="newChatBtn"
+          class="btn-gradient w-full mt-4 flex items-center justify-center gap-2 px-4 py-3 rounded-xl hover:opacity-90 text-white font-semibold text-xs shadow-lg shadow-sky-500/20 transition active:scale-[0.97]">
+          <i class="fa-solid fa-feather-pointed"></i>
+          <span>New Tweet Reply</span>
+        </button>
+      </div>
+
+      <div class="px-3 pt-3 pb-2 flex-shrink-0">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-600"></i>
+          <input id="chatSearch" type="search" placeholder="Search saved replies"
+            class="w-full bg-slate-900/70 border border-slate-800 rounded-xl pl-8 pr-3 py-2.5 text-xs text-slate-200 placeholder-slate-600 outline-none focus:border-sky-500/60 transition">
+        </div>
+      </div>
+
+      <div id="chatList" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar smooth-scroll px-3 space-y-1 pb-2"></div>
+
+      <div class="p-3 border-t border-slate-800/70 space-y-2 bg-[#060910]/90 flex-shrink-0 safe-bottom">
+        <button id="installAppBtn"
+          class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-sky-500/10 border border-sky-400/30 text-sky-300 hover:text-white hover:bg-sky-500/20 transition text-xs font-medium active:scale-[0.98]">
+          <span class="flex items-center gap-2.5"><i class="fa-solid fa-download text-sky-400"></i> Install Twit AI App</span>
+          <i class="fa-solid fa-chevron-right text-slate-500 text-[10px]"></i>
+        </button>
+
+        <button id="configBtn"
+          class="w-full flex items-center justify-between px-3 py-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition text-xs font-medium active:scale-[0.98]">
+          <span class="flex items-center gap-2.5"><i class="fa-solid fa-sliders text-sky-400"></i> Generation Rules</span>
+          <i class="fa-solid fa-gear text-slate-500 text-xs"></i>
+        </button>
+
+        <a href="mailto:admin@twitai.app"
+          class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/40 transition text-xs font-medium">
+          <span class="flex items-center gap-2"><i class="fa-regular fa-envelope text-sky-400"></i> Contact Support</span>
+        </a>
+
+        <a href="https://x.com/lemonar777" target="_blank" rel="noopener noreferrer"
+          class="flex items-center justify-between px-3 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-sky-500/40 text-slate-300 hover:text-white transition">
+          <div class="flex items-center gap-2 text-xs">
+            <span class="w-5 h-5 rounded-full bg-black flex items-center justify-center text-white border border-slate-700">
+              <i class="fa-brands fa-x-twitter text-[10px]"></i>
+            </span>
+            <span>Developed by <strong class="text-sky-400">@lemonar777</strong></span>
+          </div>
+          <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-500"></i>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 min-w-0 min-h-0 flex flex-col relative overflow-hidden z-10">
+
+      <header class="h-14 flex-shrink-0 border-b border-slate-800/60 glass flex items-center justify-between px-2.5 sm:px-4 z-30 safe-top">
+        <div class="flex items-center gap-2 min-w-0">
+          <button id="toggleSidebar" aria-label="Open menu"
+            class="md:hidden w-9 h-9 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-glow flex-shrink-0"></span>
+            <span id="headerTitle" class="text-[11px] sm:text-xs font-semibold text-slate-200 truncate max-w-[40vw] sm:max-w-none">New Tweet Reply</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+          <button id="headerInstallBtn"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-sky-300 bg-sky-500/10 border border-sky-400/30 hover:bg-sky-500/20 transition">
+            <i class="fa-solid fa-arrow-down-to-line"></i> <span class="hidden sm:inline">Install</span>
+          </button>
+
+          <!-- Placeholder shown until Firebase restores the session -->
+          <div id="authSkeleton" class="flex items-center gap-2">
+            <div class="w-20 h-8 rounded-lg shimmer"></div>
+          </div>
+
+          <div id="userArea" class="hidden items-center gap-1.5 sm:gap-2">
+            <button id="usageBadge" class="hidden sm:block px-2.5 py-1.5 rounded-full bg-slate-800/70 border border-slate-700 text-[10px] text-slate-300 hover:border-sky-500/40 transition">
+              100 free tweets
+            </button>
+            <button id="avatarBtn" aria-label="Account"
+              class="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-violet-500 text-white text-xs font-bold overflow-hidden border border-slate-700 active:scale-90 transition flex items-center justify-center">U</button>
+          </div>
+
+          <button id="loginBtn"
+            class="hidden btn-gradient px-4 py-2 rounded-lg text-white text-xs font-semibold hover:opacity-90 transition active:scale-95 shadow-lg shadow-sky-500/20">
+            Sign in
+          </button>
+        </div>
+      </header>
+
+      <div id="chatContainer" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar smooth-scroll relative">
+        <div id="messages" class="w-full max-w-3xl mx-auto px-2.5 py-4 sm:px-4 md:p-6 space-y-4 sm:space-y-6"></div>
+      </div>
+
+      <button id="scrollBottomBtn" aria-label="Scroll to latest"
+        class="hidden absolute bottom-[150px] right-4 z-20 w-10 h-10 rounded-full glass-strong text-sky-400 items-center justify-center shadow-xl active:scale-90 transition">
+        <i class="fa-solid fa-arrow-down text-xs"></i>
+      </button>
+
+      <!-- Composer -->
+      <div class="relative z-20 flex-shrink-0 bg-gradient-to-t from-[#070a12] via-[#070a12]/98 to-transparent pt-2 sm:pt-3 safe-bottom-nav">
+        <div class="w-full max-w-3xl mx-auto px-2.5 sm:px-4">
+
+          <!-- Live summary of the active rules -->
+          <button id="rulesPill"
+            class="mb-2 w-full flex items-center gap-2 px-3 py-1.5 rounded-full glass text-[10px] sm:text-[11px] text-slate-400 hover:text-slate-200 hover:border-sky-500/40 transition active:scale-[0.99]">
+            <i class="fa-solid fa-sliders text-sky-400 text-[10px]"></i>
+            <span id="rulesSummary" class="truncate flex-1 text-left">5 replies · 10–18 words · Balanced</span>
+            <i class="fa-solid fa-chevron-right text-[9px] text-slate-600"></i>
+          </button>
+
+          <div class="glass rounded-2xl p-2 shadow-2xl shadow-black/40">
+            <div class="flex items-center justify-between gap-2 px-3 pt-1 pb-2 border-b border-slate-800/60 text-[10px] sm:text-[11px] text-slate-400">
+              <span class="flex items-center gap-1.5 min-w-0">
+                <i class="fa-solid fa-quote-left text-sky-400 flex-shrink-0"></i>
+                <span class="truncate">Paste exact tweet text <strong class="text-slate-300 font-medium">(URLs ignored)</strong></span>
+              </span>
+              <button id="pasteBtn" type="button" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 font-medium flex-shrink-0 active:scale-90 transition">
+                <i class="fa-regular fa-clipboard"></i> <span>Paste</span>
+              </button>
+            </div>
+
+            <div class="relative">
+              <textarea id="chatInput" rows="2" placeholder="Paste the tweet text here..." enterkeyhint="send"
+                class="w-full bg-transparent px-3 py-3 pr-9 text-sm text-slate-100 placeholder-slate-500 resize-none outline-none custom-scrollbar max-h-40 min-h-[54px] leading-relaxed"></textarea>
+              <button id="clearInputBtn" aria-label="Clear"
+                class="hidden absolute top-2.5 right-2 w-7 h-7 rounded-lg text-slate-600 hover:text-slate-300 hover:bg-slate-800 items-center justify-center transition">
+                <i class="fa-solid fa-xmark text-xs"></i>
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between px-2 pt-1 border-t border-slate-800/40">
+              <span id="charCount" class="text-[9px] sm:text-[10px] text-slate-500 font-mono">0 chars · 0 words</span>
+              <button id="sendBtn" disabled
+                class="w-10 h-10 rounded-xl btn-gradient hover:opacity-90 text-white shadow-lg shadow-sky-500/25 disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center transition active:scale-90"
+                aria-label="Generate replies">
+                <i id="sendIcon" class="fa-solid fa-arrow-up text-sm"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="hidden sm:flex items-center justify-between text-[10px] text-slate-500 mt-2 px-1">
+            <span>Enter to generate · Shift + Enter for a new line</span>
+            <span>Developed by @lemonar777</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Login modal -->
+  <div id="loginModal" class="fixed inset-0 modal-backdrop z-[100] hidden items-center justify-center p-4">
+    <div class="glass w-full max-w-sm rounded-3xl p-6 relative scale-in" role="dialog" aria-modal="true">
+      <button class="modalClose absolute top-4 right-4 w-9 h-9 rounded-full hover:bg-slate-800 text-slate-500 hover:text-white flex items-center justify-center transition" data-modal="loginModal" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div class="text-center">
+        <div class="relative w-16 h-16 mx-auto">
+          <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 blur-lg opacity-60"></div>
+          <div class="relative w-full h-full rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
+            <i class="fa-solid fa-comment-dots text-white text-2xl"></i>
+          </div>
+        </div>
+        <h2 class="text-xl font-bold gradient-text mt-4">Welcome to Twit AI</h2>
+        <p class="text-xs text-slate-400 mt-2">Sign in with Google to get 100 free tweet submissions.</p>
+        <button id="googleLoginBtn"
+          class="w-full mt-6 py-3.5 rounded-xl bg-white text-slate-900 font-semibold text-sm hover:bg-slate-100 transition flex items-center justify-center gap-3 active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed">
+          <i id="googleLoginIcon" class="fa-brands fa-google"></i>
+          <span id="googleLoginText">Continue with Google</span>
+        </button>
+        <p id="loginError" class="text-xs text-rose-400 mt-3 hidden text-left leading-relaxed"></p>
+        <p class="text-[10px] text-slate-600 mt-4">By signing in you agree to our terms of service.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account modal -->
+  <div id="accountModal" class="fixed inset-0 modal-backdrop z-[100] hidden items-center justify-center p-4">
+    <div class="glass w-full max-w-md rounded-3xl p-5 sm:p-6 relative max-h-[90dvh] overflow-y-auto custom-scrollbar scale-in" role="dialog" aria-modal="true">
+      <button class="modalClose absolute top-4 right-4 w-9 h-9 rounded-full hover:bg-slate-800 text-slate-500 hover:text-white flex items-center justify-center transition" data-modal="accountModal" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <h2 class="text-lg font-bold text-white">Account</h2>
+
+      <div class="mt-5 flex items-center gap-3">
+        <div id="accountAvatar" class="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-violet-500 flex items-center justify-center text-white font-bold overflow-hidden flex-shrink-0">U</div>
+        <div class="min-w-0">
+          <div id="accountName" class="font-semibold text-white truncate">User</div>
+          <div id="accountEmail" class="text-xs text-slate-400 truncate"></div>
+        </div>
+      </div>
+
+      <div class="mt-5 grid grid-cols-2 gap-3">
+        <div class="rounded-xl bg-slate-900/80 border border-slate-800 p-4">
+          <div class="text-[10px] text-slate-500 uppercase">Free usage</div>
+          <div id="accountFree" class="text-xl font-bold text-white mt-1">0 / 100</div>
+          <div class="h-1.5 rounded-full bg-slate-800 mt-2.5 overflow-hidden">
+            <div id="accountUsageBar" class="h-full rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 transition-all duration-500" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="rounded-xl bg-slate-900/80 border border-slate-800 p-4">
+          <div class="text-[10px] text-slate-500 uppercase">Plan</div>
+          <div id="accountPlan" class="text-xl font-bold text-sky-400 mt-1">Free</div>
+        </div>
+      </div>
+
+      <div id="subscriptionInfo" class="mt-3 rounded-xl bg-slate-900/80 border border-slate-800 p-4 text-xs text-slate-300"></div>
+
+      <button id="subscribeFromAccount" class="btn-gradient w-full mt-4 py-3.5 rounded-xl text-white font-semibold text-sm active:scale-[0.97] transition">Subscribe</button>
+      <button id="mobileLogoutBtn" class="w-full mt-3 py-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-500/20 font-semibold text-sm active:scale-[0.97] transition">
+        <i class="fa-solid fa-right-from-bracket mr-2"></i> Log out
+      </button>
+    </div>
+  </div>
+
+  <!-- Subscription modal -->
+  <div id="subscriptionModal" class="fixed inset-0 modal-backdrop z-[100] hidden items-center justify-center p-4">
+    <div class="glass w-full max-w-lg rounded-3xl p-5 sm:p-6 relative max-h-[92dvh] overflow-y-auto custom-scrollbar scale-in" role="dialog" aria-modal="true">
+      <button class="modalClose absolute top-4 right-4 w-9 h-9 rounded-full hover:bg-slate-800 text-slate-500 hover:text-white flex items-center justify-center transition" data-modal="subscriptionModal" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <h2 class="text-lg font-bold text-white">Subscribe to Twit AI</h2>
+      <p class="text-xs text-slate-400 mt-1">Send the exact amount to the wallet below, then submit your transaction hash.</p>
+
+      <div id="planGrid" class="grid grid-cols-2 gap-2 mt-5"></div>
+
+      <div class="mt-4 rounded-xl bg-slate-950/80 border border-slate-800 p-4">
+        <div class="text-[10px] text-slate-500 uppercase mb-1">Network</div>
+        <div id="paymentNetwork" class="text-sm text-white font-semibold">Loading...</div>
+        <div class="text-[10px] text-slate-500 uppercase mt-4 mb-1">Payment wallet</div>
+        <div class="flex gap-2">
+          <input id="paymentWallet" readonly class="flex-1 min-w-0 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300">
+          <button id="copyWalletBtn" class="px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs active:scale-90 transition">Copy</button>
+        </div>
+      </div>
+
+      <label class="block text-xs font-medium text-slate-400 mt-4 mb-1.5" for="txHashInput">Transaction hash</label>
+      <input id="txHashInput" type="text" placeholder="0x..." autocomplete="off"
+        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-sm text-white outline-none focus:border-sky-500 transition">
+
+      <button id="submitPaymentBtn" class="btn-gradient w-full mt-4 py-3.5 rounded-xl hover:opacity-90 text-white font-semibold text-sm disabled:opacity-40 active:scale-[0.97] transition">
+        Submit Payment for Review
+      </button>
+      <p id="paymentMessage" class="text-xs mt-3 hidden"></p>
+    </div>
+  </div>
+
+  <!-- Install modal -->
+  <div id="installModal" class="fixed inset-0 modal-backdrop z-[100] hidden items-center justify-center p-4">
+    <div class="glass w-full max-w-md rounded-3xl p-5 sm:p-6 relative max-h-[92dvh] overflow-y-auto custom-scrollbar scale-in" role="dialog" aria-modal="true">
+      <button class="modalClose absolute top-4 right-4 w-9 h-9 rounded-full hover:bg-slate-800 text-slate-500 hover:text-white flex items-center justify-center transition" data-modal="installModal" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white text-lg">
+          <i class="fa-solid fa-cloud-arrow-down"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-white">Install Twit AI App</h2>
+          <p class="text-xs text-slate-400">Add to your Home Screen or Desktop</p>
+        </div>
+      </div>
+
+      <div class="mt-5 space-y-4">
+        <button id="directInstallBtn" class="btn-gradient w-full py-3.5 rounded-xl text-white font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.97] transition shadow-lg shadow-sky-500/20">
+          <i class="fa-brands fa-chrome"></i> One-click install
+        </button>
+        <a href="https://drive.usercontent.google.com/download?id=1gSOHK_ZpvIAIGAVMKrx9_f85kveFYPnG&export=download&confirm=t"
+          class="w-full py-3.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-200 hover:text-white hover:bg-slate-700/80 font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.97] transition"
+          download>
+          <i class="fa-solid fa-download"></i> Download Chrome Extension
+        </a>
+        <p id="installHint" class="text-[11px] text-slate-500 text-center -mt-2"></p>
+
+        <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+          <div class="flex items-center gap-2 text-xs font-semibold text-sky-400 mb-2"><i class="fa-brands fa-chrome"></i> Chrome (PC &amp; Android)</div>
+          <ul class="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
+            <li><strong>PC:</strong> click the install icon <i class="fa-solid fa-circle-down text-sky-400"></i> in the address bar, or menu <i class="fa-solid fa-ellipsis-vertical text-slate-400"></i> &gt; <strong>Install Twit AI</strong>.</li>
+            <li><strong>Android:</strong> menu <i class="fa-solid fa-ellipsis-vertical text-slate-400"></i> &gt; <strong>Install app</strong> / <strong>Add to Home screen</strong>.</li>
+          </ul>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+          <div class="flex items-center gap-2 text-xs font-semibold text-slate-200 mb-2"><i class="fa-brands fa-apple"></i> iPhone &amp; iPad (Safari)</div>
+          <ol class="text-xs text-slate-300 space-y-1.5 list-decimal list-inside">
+            <li>Open this page in <strong>Safari</strong>.</li>
+            <li>Tap <strong>Share</strong> <i class="fa-solid fa-arrow-up-from-bracket text-sky-400"></i>.</li>
+            <li>Tap <strong>Add to Home Screen</strong>, then <strong>Add</strong>.</li>
+          </ol>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+          <div class="flex items-center gap-2 text-xs font-semibold text-slate-200 mb-2"><i class="fa-solid fa-laptop"></i> Mac</div>
+          <ul class="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
+            <li><strong>Safari:</strong> <strong>File</strong> &gt; <strong>Add to Dock</strong>.</li>
+            <li><strong>Chrome:</strong> install icon <i class="fa-solid fa-circle-down text-sky-400"></i> in the URL bar.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generation rules -->
+  <div id="configModal" class="fixed inset-0 modal-backdrop z-[100] hidden items-center justify-center p-4">
+    <div class="glass w-full max-w-md rounded-3xl p-5 sm:p-6 relative max-h-[92dvh] overflow-y-auto custom-scrollbar scale-in" role="dialog" aria-modal="true">
+      <button class="modalClose absolute top-4 right-4 w-9 h-9 rounded-full hover:bg-slate-800 text-slate-500 hover:text-white flex items-center justify-center transition" data-modal="configModal" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <h2 class="text-lg font-bold text-white">Generation Rules</h2>
+
+      <div class="mt-5 space-y-4">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-medium text-slate-400" for="replyCountInput">Number of replies</label>
+            <span id="replyCountValue" class="text-xs font-bold text-sky-400">5</span>
+          </div>
+          <input id="replyCountInput" type="range" min="1" max="10" value="5" class="w-full accent-sky-500">
+        </div>
+
+        <div>
+          <label class="text-xs font-medium text-slate-400 block mb-1.5" for="languageSelect">Reply language</label>
+          <select id="languageSelect" class="w-full px-3.5 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white outline-none focus:border-sky-500 transition">
+            <option value="auto">Auto detect</option>
+            <option value="english">English</option>
+            <option value="vietnamese">Vietnamese</option>
+            <option value="chinese">Chinese</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs font-medium text-slate-400 block mb-1.5">Words per reply</label>
+          <div class="flex items-center gap-3">
+            <input id="minWordsInput" type="number" min="5" max="30" value="10" inputmode="numeric"
+              class="w-full px-3.5 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white text-center outline-none focus:border-sky-500 transition">
+            <span class="text-slate-500 text-xs">to</span>
+            <input id="maxWordsInput" type="number" min="10" max="60" value="18" inputmode="numeric"
+              class="w-full px-3.5 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white text-center outline-none focus:border-sky-500 transition">
+          </div>
+          <p id="wordsHint" class="text-[10px] text-amber-400 mt-1.5 hidden">Maximum must be at least the minimum.</p>
+        </div>
+
+        <div>
+          <label class="text-xs font-medium text-slate-400 block mb-1.5" for="toneSelector">Reply tone &amp; style</label>
+          <select id="toneSelector" class="w-full px-3.5 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white outline-none focus:border-sky-500 transition">
+            <option value="balanced">Balanced CT (organic &amp; casual)</option>
+            <option value="technical">Technical / protocol deep-dive</option>
+            <option value="defi">DeFi &amp; capital mechanics</option>
+            <option value="skeptical">Constructive &amp; analytical skeptic</option>
+            <option value="humor">Light CT irony / banter</option>
+            <option value="bullish_rational">Rational conviction</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs font-medium text-slate-400 block mb-1.5" for="projectTag">Include ticker or handle (optional)</label>
+          <input id="projectTag" type="text" placeholder="e.g. $BTC, @arbitrum" autocomplete="off"
+            class="w-full px-3.5 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white outline-none focus:border-sky-500 transition">
+        </div>
+
+        <div class="flex gap-2">
+          <button id="resetConfigBtn" class="px-4 py-3.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 hover:text-white font-semibold text-sm active:scale-[0.97] transition">Reset</button>
+          <button id="saveConfigBtn" class="btn-gradient flex-1 py-3.5 rounded-xl text-white font-semibold text-sm active:scale-[0.97] transition">Apply settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm dialog -->
+  <div id="confirmModal" class="fixed inset-0 modal-backdrop z-[110] hidden items-center justify-center p-4">
+    <div class="glass w-full max-w-xs rounded-2xl p-5 scale-in" role="alertdialog" aria-modal="true">
+      <h3 id="confirmTitle" class="text-sm font-bold text-white">Are you sure?</h3>
+      <p id="confirmText" class="text-xs text-slate-400 mt-2 leading-relaxed"></p>
+      <div class="flex gap-2 mt-5">
+        <button id="confirmCancel" class="flex-1 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 text-xs font-semibold active:scale-[0.97] transition">Cancel</button>
+        <button id="confirmOk" class="flex-1 py-2.5 rounded-xl bg-rose-500/90 hover:bg-rose-500 text-white text-xs font-semibold active:scale-[0.97] transition">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" role="status" aria-live="polite"
+    class="fixed left-1/2 bottom-5 -translate-x-1/2 translate-y-20 opacity-0 pointer-events-none z-[200] px-5 py-3 rounded-full text-white font-semibold text-xs shadow-2xl transition-all duration-300 flex items-center gap-2 safe-bottom-nav"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+    import {
+      getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+      getRedirectResult, setPersistence, browserLocalPersistence,
+      onAuthStateChanged, signOut
+    } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAgPi6rbLwIRNWHzNB1u_P82rBEVEmKTlY",
+      authDomain: "auth.twitai.app",
+      projectId: "twit-ai",
+      storageBucket: "twit-ai.firebasestorage.app",
+      messagingSenderId: "444927859336",
+      appId: "1:444927859336:web:c51fd0a476d9b32bc79d3d"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const googleProvider = new GoogleAuthProvider();
+    googleProvider.setCustomParameters({ prompt: "select_account" });
+
+    const DEFAULT_SETTINGS = {
+      replyCount: 5, minWords: 10, maxWords: 18,
+      tone: "balanced", tag: "", language: "auto"
+    };
+
+    const TONE_LABELS = {
+      balanced: "Balanced",
+      technical: "Technical",
+      defi: "DeFi",
+      skeptical: "Skeptic",
+      humor: "Banter",
+      bullish_rational: "Conviction"
+    };
+
+    const state = {
+      chats: [],
+      currentChatId: null,
+      settings: { ...DEFAULT_SETTINGS },
+      user: null,
+      profile: null,
+      plans: {},
+      paymentConfig: null,
+      selectedPlan: null,
+      isGenerating: false,
+      searchQuery: "",
+      authReady: false
+    };
+
+    const $ = id => document.getElementById(id);
+
+    /* ------------------------------------------------------------------ */
+    /* Toast + confirm                                                     */
+    /* ------------------------------------------------------------------ */
+    function showToast(message, type = "info") {
+      const t = $("toast");
+      const icon = type === "error" ? "fa-circle-exclamation"
+        : type === "success" ? "fa-circle-check"
+        : "fa-circle-info";
+      t.className = t.className.replace(/ (btn-gradient|bg-rose-500|bg-emerald-600|bg-slate-800)/g, "");
+      t.classList.add(type === "error" ? "bg-rose-500" : type === "success" ? "bg-emerald-600" : "btn-gradient");
+      t.innerHTML = `<i class="fa-solid ${icon}"></i><span></span>`;
+      t.querySelector("span").textContent = message;
+      t.classList.remove("translate-y-20", "opacity-0");
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.add("translate-y-20", "opacity-0"), 2600);
+    }
+
+    let confirmResolver = null;
+    function askConfirm(title, text, okLabel = "Delete") {
+      $("confirmTitle").textContent = title;
+      $("confirmText").textContent = text;
+      $("confirmOk").textContent = okLabel;
+      openModal("confirmModal");
+      return new Promise(resolve => { confirmResolver = resolve; });
+    }
+    function settleConfirm(value) {
+      closeModal("confirmModal");
+      if (confirmResolver) { confirmResolver(value); confirmResolver = null; }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Modals                                                              */
+    /* ------------------------------------------------------------------ */
+    const modalStack = [];
+
+    function openModal(id) {
+      const m = $(id);
+      if (!m || !m.classList.contains("hidden")) return;
+      m.classList.remove("hidden");
+      m.classList.add("flex");
+      modalStack.push(id);
+      const focusable = m.querySelector("input:not([readonly]), button");
+      if (focusable && window.innerWidth >= 768) setTimeout(() => focusable.focus(), 60);
+    }
+
+    function closeModal(id) {
+      const m = $(id);
+      if (!m) return;
+      m.classList.add("hidden");
+      m.classList.remove("flex");
+      const i = modalStack.lastIndexOf(id);
+      if (i > -1) modalStack.splice(i, 1);
+    }
+
+    function closeTopModal() {
+      if (modalStack.length) {
+        const id = modalStack[modalStack.length - 1];
+        if (id === "confirmModal") settleConfirm(false);
+        else closeModal(id);
+        return true;
+      }
+      return false;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Auth                                                                */
+    /* ------------------------------------------------------------------ */
+    function setAuthBusy(busy, label) {
+      const btn = $("googleLoginBtn");
+      if (!btn) return;
+      btn.disabled = busy;
+      $("googleLoginIcon").className = busy ? "fa-solid fa-circle-notch spin" : "fa-brands fa-google";
+      $("googleLoginText").textContent = busy ? (label || "Connecting...") : "Continue with Google";
+    }
+
+    function showLoginError(msg) {
+      const el = $("loginError");
+      el.textContent = msg;
+      el.classList.remove("hidden");
+    }
+
+    async function loginGoogle() {
+      $("loginError").classList.add("hidden");
+      setAuthBusy(true);
+
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+
+        // Popup first on every device. Unlike redirect it does not depend on a
+        // cross-site session surviving Safari ITP / Chrome storage partitioning,
+        // which is what silently dropped mobile logins before.
+        try {
+          const result = await signInWithPopup(auth, googleProvider);
+          if (result?.user) {
+            state.user = result.user;
+            state.authReady = true;
+            updateAuthUI();
+            closeModal("loginModal");
+            showToast("Signed in successfully", "success");
+            refreshAccount();
+          }
+          setAuthBusy(false);
+        } catch (popupErr) {
+          if (popupErr?.code === "auth/popup-closed-by-user") { setAuthBusy(false); return; }
+          const fallback = [
+            "auth/popup-blocked",
+            "auth/cancelled-popup-request",
+            "auth/operation-not-supported-in-this-environment",
+            "auth/web-storage-unsupported"
+          ];
+          if (fallback.includes(popupErr?.code)) {
+            sessionStorage.setItem("twitAiPendingAuth", "1");
+            await signInWithRedirect(auth, googleProvider);
+            return;
+          }
+          throw popupErr;
+        }
+      } catch (err) {
+        console.error("Google sign-in error:", err);
+        setAuthBusy(false);
+        showLoginError(err?.message || "Google sign-in failed. Please try again.");
+      }
+    }
+
+    // Settle any pending redirect BEFORE the header decides what to render.
+    const redirectSettled = getRedirectResult(auth)
+      .then(result => {
+        if (result?.user) {
+          state.user = result.user;
+          closeModal("loginModal");
+          showToast("Signed in successfully", "success");
+        } else if (sessionStorage.getItem("twitAiPendingAuth")) {
+          openModal("loginModal");
+          showLoginError("Your browser blocked the sign-in session. Allow cookies / cross-site tracking for this site, or just tap the button again — it will use a popup.");
+        }
+      })
+      .catch(err => {
+        console.error("Redirect result error:", err);
+        showLoginError(err?.message || "Google sign-in redirect failed.");
+      })
+      .finally(() => {
+        sessionStorage.removeItem("twitAiPendingAuth");
+        setAuthBusy(false);
+      });
+
+    onAuthStateChanged(auth, async user => {
+      await redirectSettled;
+      state.user = user;
+      state.authReady = true;
+      updateAuthUI();
+      setAuthBusy(false);
+
+      if (user) {
+        closeModal("loginModal");
+        try { await refreshAccount(); } catch (e) { console.warn("Account refresh failed:", e); }
+      }
+    });
+
+    async function logout() {
+      const ok = await askConfirm("Log out?", "You can sign back in at any time. Saved replies stay on this device.", "Log out");
+      if (!ok) return;
+      try {
+        await signOut(auth);
+        state.user = null;
+        state.profile = null;
+        updateAuthUI();
+        closeModal("accountModal");
+        showToast("Logged out", "success");
+      } catch (err) {
+        console.error("Logout error:", err);
+        showToast("Logout failed. Please try again.", "error");
+      }
+    }
+
+    function updateAuthUI() {
+      const loggedIn = !!state.user;
+      $("authSkeleton").classList.toggle("hidden", state.authReady);
+      $("loginBtn").classList.toggle("hidden", loggedIn || !state.authReady);
+      $("userArea").classList.toggle("hidden", !loggedIn);
+      $("userArea").classList.toggle("flex", loggedIn);
+      if (loggedIn) updateAccountUI();
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* PWA install                                                         */
+    /* ------------------------------------------------------------------ */
+    function isStandalone() {
+      return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    }
+
+    function isIOS() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    }
+
+    function setInstallAvailable(available) {
+      ["installAppBtn", "headerInstallBtn"].forEach(id => {
+        const el = $(id);
+        if (!el) return;
+        el.classList.toggle("ring-2", available);
+        el.classList.toggle("ring-sky-400/60", available);
+      });
+      const direct = $("directInstallBtn");
+      const hint = $("installHint");
+      if (direct) direct.classList.toggle("opacity-40", !available);
+      if (hint) {
+        hint.textContent = available
+          ? ""
+          : isIOS()
+            ? "iOS has no install button — use the Safari steps below."
+            : "Not offered by this browser yet. Use the manual steps below.";
+      }
+    }
+
+    document.addEventListener("pwa-installable", () => setInstallAvailable(true));
+
+    window.addEventListener("appinstalled", () => {
+      window.__deferredPrompt = null;
+      setInstallAvailable(false);
+      closeModal("installModal");
+      showToast("Twit AI installed", "success");
+      hideInstallButtons();
+    });
+
+    function hideInstallButtons() {
+      $("installAppBtn").classList.add("hidden");
+      $("headerInstallBtn").classList.add("hidden");
+    }
+
+    async function handleInstallClick() {
+      if (isStandalone()) { showToast("Twit AI is already installed"); return; }
+
+      const prompt = window.__deferredPrompt;
+      if (prompt) {
+        try {
+          prompt.prompt();
+          const choice = await prompt.userChoice;
+          if (choice?.outcome === "accepted") showToast("Installing Twit AI...", "success");
+        } catch (e) {
+          console.warn("Install prompt error:", e);
+        } finally {
+          window.__deferredPrompt = null;
+          setInstallAvailable(false);
+        }
+        return;
+      }
+      openModal("installModal");
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Local state                                                         */
+    /* ------------------------------------------------------------------ */
+    function loadLocalState() {
+      try {
+        const saved = localStorage.getItem("twitAiState");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          state.chats = Array.isArray(parsed.chats) ? parsed.chats : [];
+          state.currentChatId = parsed.currentChatId || null;
+          state.settings = { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) };
+        }
+      } catch {}
+      if (!state.chats.length) createNewChat(false);
+      if (!state.chats.find(c => c.id === state.currentChatId)) state.currentChatId = state.chats[0].id;
+      syncSettingsUI();
+      renderChatList();
+      renderMessages();
+    }
+
+    function saveLocalState() {
+      try {
+        localStorage.setItem("twitAiState", JSON.stringify({
+          chats: state.chats,
+          currentChatId: state.currentChatId,
+          settings: state.settings
+        }));
+      } catch (e) {
+        console.warn("Could not persist state:", e);
+      }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Chats                                                               */
+    /* ------------------------------------------------------------------ */
+    function currentChat() {
+      return state.chats.find(c => c.id === state.currentChatId);
+    }
+
+    function createNewChat(render = true) {
+      const existingEmpty = state.chats.find(c => !c.messages.length);
+      if (existingEmpty && render) {
+        state.currentChatId = existingEmpty.id;
+      } else {
+        state.chats.unshift({
+          id: Date.now().toString(),
+          title: "New Tweet Reply",
+          createdAt: Date.now(),
+          messages: []
+        });
+        state.currentChatId = state.chats[0].id;
+      }
+      saveLocalState();
+      if (render) {
+        renderChatList();
+        renderMessages();
+        closeSidebar();
+        if (window.innerWidth >= 768) $("chatInput").focus();
+      }
+    }
+
+    function selectChat(id) {
+      state.currentChatId = id;
+      saveLocalState();
+      renderChatList();
+      renderMessages();
+      closeSidebar();
+    }
+
+    async function deleteChat(id, event) {
+      event.stopPropagation();
+      const chat = state.chats.find(c => c.id === id);
+      const ok = !chat?.messages.length || await askConfirm(
+        "Delete this reply set?",
+        `"${(chat.title || "New Tweet Reply").slice(0, 60)}" will be removed from this device.`
+      );
+      if (!ok) return;
+
+      state.chats = state.chats.filter(c => c.id !== id);
+      if (!state.chats.length) createNewChat(false);
+      if (!state.chats.find(c => c.id === state.currentChatId)) state.currentChatId = state.chats[0].id;
+      saveLocalState();
+      renderChatList();
+      renderMessages();
+      showToast("Deleted", "success");
+    }
+
+    function relativeTime(ts) {
+      if (!ts) return "";
+      const diff = Date.now() - ts;
+      const m = Math.floor(diff / 60000);
+      if (m < 1) return "now";
+      if (m < 60) return `${m}m`;
+      const h = Math.floor(m / 60);
+      if (h < 24) return `${h}h`;
+      const d = Math.floor(h / 24);
+      return d < 7 ? `${d}d` : new Date(ts).toLocaleDateString();
+    }
+
+    function renderChatList() {
+      const el = $("chatList");
+      el.innerHTML = "";
+      const q = state.searchQuery.trim().toLowerCase();
+      const list = q
+        ? state.chats.filter(c => (c.title || "").toLowerCase().includes(q) ||
+            c.messages.some(m => typeof m.content === "string" && m.content.toLowerCase().includes(q)))
+        : state.chats;
+
+      if (!list.length) {
+        el.innerHTML = `<div class="px-3 py-8 text-center text-[11px] text-slate-600">${q ? "No matches" : "No saved replies yet"}</div>`;
+        return;
+      }
+
+      for (const chat of list) {
+        const active = chat.id === state.currentChatId;
+        const btn = document.createElement("button");
+        btn.className = `group w-full text-left flex items-center gap-2 px-3 py-2.5 rounded-xl border transition active:scale-[0.98] ${
+          active ? "bg-sky-500/10 border-sky-400/40 text-sky-300"
+                 : "border-transparent text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"}`;
+        btn.onclick = () => selectChat(chat.id);
+
+        const wrap = document.createElement("span");
+        wrap.className = "flex-1 min-w-0";
+
+        const title = document.createElement("span");
+        title.className = "block truncate text-xs";
+        title.textContent = chat.title || "New Tweet Reply";
+
+        const meta = document.createElement("span");
+        meta.className = "block text-[9px] text-slate-600 mt-0.5";
+        const count = chat.messages.filter(m => m.role === "assistant" && !m.loading).length;
+        meta.textContent = [relativeTime(chat.createdAt), count ? `${count} set${count > 1 ? "s" : ""}` : ""].filter(Boolean).join(" · ");
+
+        wrap.append(title, meta);
+
+        const del = document.createElement("span");
+        del.setAttribute("role", "button");
+        del.setAttribute("aria-label", "Delete");
+        del.className = "w-7 h-7 rounded-lg hover:bg-slate-700 flex items-center justify-center text-slate-600 hover:text-rose-400 flex-shrink-0 transition md:opacity-0 md:group-hover:opacity-100";
+        del.innerHTML = '<i class="fa-solid fa-trash text-[9px]"></i>';
+        del.onclick = e => deleteChat(chat.id, e);
+
+        btn.append(wrap, del);
+        el.appendChild(btn);
+      }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Messages                                                            */
+    /* ------------------------------------------------------------------ */
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text == null ? "" : String(text);
+      return div.innerHTML;
+    }
+
+    function loadingSkeleton() {
+      return `
+        <div class="space-y-2.5" aria-live="polite" aria-label="Generating replies">
+          ${Array.from({ length: Math.min(3, state.settings.replyCount) }).map((_, i) => `
+            <div class="glass rounded-2xl p-4 flex items-start gap-3" style="animation-delay:${i * 90}ms">
+              <div class="w-7 h-7 rounded-lg shimmer flex-shrink-0"></div>
+              <div class="flex-1 space-y-2 pt-1">
+                <div class="h-2.5 rounded-full shimmer" style="width:${90 - i * 12}%"></div>
+                <div class="h-2.5 rounded-full shimmer" style="width:${65 - i * 8}%"></div>
+              </div>
+            </div>`).join("")}
+          <div class="flex items-center gap-2 text-[11px] text-slate-500 px-1">
+            <i class="fa-solid fa-circle-notch spin text-sky-400"></i> Generating replies...
+          </div>
+        </div>`;
+    }
+
+    function repliesBlock(message, msgIndex) {
+      const replies = Array.isArray(message.content) ? message.content : [message.content];
+      const isError = message.error === true;
+
+      if (isError) {
+        return `
+          <div class="glass rounded-2xl p-4 border-rose-500/30">
+            <div class="flex items-start gap-3">
+              <i class="fa-solid fa-triangle-exclamation text-rose-400 mt-0.5"></i>
+              <div class="flex-1 min-w-0">
+                <div class="text-xs text-rose-300 leading-relaxed break-words">${escapeHtml(replies[0])}</div>
+                <button class="retryBtn mt-3 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 transition active:scale-95" data-index="${msgIndex}">
+                  <i class="fa-solid fa-rotate-right mr-1"></i> Try again
+                </button>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      return `
+        <div class="space-y-2.5">
+          ${replies.map((reply, i) => `
+            <div class="glass reply-card rounded-2xl p-3.5 sm:p-4 hover:border-sky-400/30 transition" style="animation-delay:${i * 60}ms">
+              <div class="flex items-start gap-3">
+                <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-500/20 to-indigo-500/20 border border-sky-400/20 flex items-center justify-center text-[10px] font-bold text-sky-400 flex-shrink-0">${i + 1}</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(reply)}</div>
+                  <div class="text-[9px] text-slate-600 mt-1.5 font-mono">${countWords(reply)} words · ${reply.length} chars</div>
+                </div>
+                <button class="copyReply w-9 h-9 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center flex-shrink-0 active:scale-90 transition"
+                  aria-label="Copy reply" data-reply="${encodeURIComponent(reply)}">
+                  <i class="fa-regular fa-copy text-[11px]"></i>
+                </button>
+              </div>
+            </div>`).join("")}
+
+          <div class="flex items-center gap-2 pt-0.5">
+            <button class="copyAllBtn px-3 py-2 rounded-xl bg-slate-800/70 hover:bg-slate-700 border border-slate-700/70 text-[11px] text-slate-300 transition active:scale-95" data-index="${msgIndex}">
+              <i class="fa-regular fa-clone mr-1"></i> Copy all
+            </button>
+            <button class="retryBtn px-3 py-2 rounded-xl bg-slate-800/70 hover:bg-slate-700 border border-slate-700/70 text-[11px] text-slate-300 transition active:scale-95" data-index="${msgIndex}">
+              <i class="fa-solid fa-rotate-right mr-1"></i> Regenerate
+            </button>
+          </div>
+        </div>`;
+    }
+
+    function renderMessages() {
+      const container = $("messages");
+      container.innerHTML = "";
+      const chat = currentChat();
+      $("headerTitle").textContent = chat?.title || "New Tweet Reply";
+
+      if (!chat || !chat.messages.length) {
+        const empty = document.createElement("div");
+        empty.className = "min-h-[60vh] flex items-center justify-center text-center px-4";
+        empty.innerHTML = `
+          <div class="max-w-md slide-in">
+            <div class="relative w-20 h-20 mx-auto">
+              <div class="absolute inset-0 rounded-3xl bg-gradient-to-br from-sky-500/30 to-indigo-500/30 blur-xl opacity-70"></div>
+              <div class="relative w-full h-full rounded-3xl bg-gradient-to-br from-sky-500/20 to-indigo-500/20 border border-sky-400/20 flex items-center justify-center">
+                <i class="fa-solid fa-wand-magic-sparkles text-sky-400 text-2xl"></i>
+              </div>
+            </div>
+            <h2 class="text-xl font-bold gradient-text mt-5">Generate natural X replies</h2>
+            <p class="text-sm text-slate-500 mt-2">Paste a tweet below and Twit AI writes replies using your rules.</p>
+            <div class="mt-6 grid gap-2 text-left">
+              <div class="glass rounded-xl px-3.5 py-3 text-[11px] text-slate-400 flex items-center gap-2.5">
+                <i class="fa-solid fa-1 text-sky-400 w-3"></i> Copy the tweet text from X (links are stripped).
+              </div>
+              <div class="glass rounded-xl px-3.5 py-3 text-[11px] text-slate-400 flex items-center gap-2.5">
+                <i class="fa-solid fa-2 text-sky-400 w-3"></i> Set tone and length in Generation Rules.
+              </div>
+              <div class="glass rounded-xl px-3.5 py-3 text-[11px] text-slate-400 flex items-center gap-2.5">
+                <i class="fa-solid fa-3 text-sky-400 w-3"></i> Tap a reply to copy it straight back to X.
+              </div>
+            </div>
+          </div>`;
+        container.appendChild(empty);
+        return;
+      }
+
+      chat.messages.forEach((message, index) => {
+        const wrap = document.createElement("div");
+        wrap.className = message.role === "user" ? "flex justify-end slide-in" : "flex justify-start slide-in";
+
+        const bubble = document.createElement("div");
+        bubble.className = message.role === "user"
+          ? "max-w-[92%] sm:max-w-[80%] rounded-2xl rounded-br-md bg-sky-500/10 border border-sky-400/20 px-3.5 py-3 text-sm text-slate-200 whitespace-pre-wrap break-words"
+          : "w-full max-w-full";
+
+        if (message.role === "user") bubble.textContent = message.content;
+        else if (message.loading) bubble.innerHTML = loadingSkeleton();
+        else bubble.innerHTML = repliesBlock(message, index);
+
+        wrap.appendChild(bubble);
+        container.appendChild(wrap);
+      });
+
+      bindMessageActions();
+      requestAnimationFrame(scrollToBottom);
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          return true;
+        } catch { return false; }
+      }
+    }
+
+    function bindMessageActions() {
+      document.querySelectorAll(".copyReply").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const ok = await copyText(decodeURIComponent(btn.dataset.reply));
+          if (!ok) return showToast("Copy failed", "error");
+          const icon = btn.querySelector("i");
+          icon.className = "fa-solid fa-check text-[11px] text-emerald-400";
+          setTimeout(() => { icon.className = "fa-regular fa-copy text-[11px]"; }, 1400);
+          showToast("Reply copied", "success");
+        });
+      });
+
+      document.querySelectorAll(".copyAllBtn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const chat = currentChat();
+          const msg = chat?.messages[Number(btn.dataset.index)];
+          if (!msg) return;
+          const all = (Array.isArray(msg.content) ? msg.content : [msg.content])
+            .map((r, i) => `${i + 1}. ${r}`).join("\n\n");
+          const ok = await copyText(all);
+          showToast(ok ? "All replies copied" : "Copy failed", ok ? "success" : "error");
+        });
+      });
+
+      document.querySelectorAll(".retryBtn").forEach(btn => {
+        btn.addEventListener("click", () => regenerate(Number(btn.dataset.index)));
+      });
+    }
+
+    function scrollToBottom() {
+      const c = $("chatContainer");
+      c.scrollTop = c.scrollHeight;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Utils                                                               */
+    /* ------------------------------------------------------------------ */
+    function countWords(text) {
+      return text ? (String(text).trim().match(/\S+/g) || []).length : 0;
+    }
+
+    function sanitizeTweetInput(text) {
+      return String(text || "").replace(/https?:\/\/\S+/gi, "").trim();
+    }
+
+    function updateCounters(text) {
+      $("charCount").textContent = `${text.length} chars · ${countWords(text)} words`;
+      $("sendBtn").disabled = state.isGenerating || !sanitizeTweetInput(text);
+      $("clearInputBtn").classList.toggle("hidden", !text.length);
+      $("clearInputBtn").classList.toggle("flex", !!text.length);
+    }
+
+    function parseReplies(raw) {
+      const replies = [];
+      const regex = /```(?:[a-zA-Z]+)?\s*([\s\S]*?)```/g;
+      let match;
+      while ((match = regex.exec(raw)) !== null) {
+        const t = match[1].trim();
+        if (t) replies.push(t);
+      }
+      if (replies.length) return replies;
+      return String(raw || "")
+        .split("\n")
+        .map(x => x.trim().replace(/^\d+[.)]\s*/, "").replace(/^[-*•]\s*/, ""))
+        .filter(Boolean)
+        .slice(0, state.settings.replyCount);
+    }
+
+    function rulesSummary() {
+      const s = state.settings;
+      const parts = [
+        `${s.replyCount} repl${s.replyCount > 1 ? "ies" : "y"}`,
+        `${s.minWords}–${s.maxWords} words`,
+        TONE_LABELS[s.tone] || s.tone
+      ];
+      if (s.tag) parts.push(s.tag);
+      if (s.language !== "auto") parts.push(s.language);
+      return parts.join(" · ");
+    }
+
+    function syncSettingsUI() {
+      $("replyCountInput").value = state.settings.replyCount;
+      $("replyCountValue").textContent = state.settings.replyCount;
+      $("minWordsInput").value = state.settings.minWords;
+      $("maxWordsInput").value = state.settings.maxWords;
+      $("toneSelector").value = state.settings.tone;
+      $("projectTag").value = state.settings.tag;
+      $("languageSelect").value = state.settings.language;
+      $("rulesSummary").textContent = rulesSummary();
+    }
+
+    function closeSidebar() {
+      $("sidebar").classList.add("-translate-x-full");
+      $("sidebarOverlay").classList.add("hidden");
+    }
+
+    function openSidebar() {
+      $("sidebar").classList.remove("-translate-x-full");
+      $("sidebarOverlay").classList.remove("hidden");
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* API                                                                 */
+    /* ------------------------------------------------------------------ */
+    async function getIdToken() {
+      if (!state.user) throw new Error("Please sign in first.");
+      return await state.user.getIdToken(true);
+    }
+
+    async function apiFetch(url, options = {}) {
+      const token = await getIdToken();
+      const res = await fetch(url, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers || {}),
+          Authorization: `Bearer ${token}`
+        }
+      });
+      let data = {};
+      try { data = await res.json(); } catch {}
+      if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+      return data;
+    }
+
+    async function refreshAccount() {
+      if (!state.user) return;
+      try {
+        const data = await apiFetch("/api/me");
+        state.profile = data.profile || data.user || data;
+        updateAccountUI();
+      } catch (e) {
+        console.error("Account refresh:", e);
+      }
+    }
+
+    function updateAccountUI() {
+      const p = state.profile || {};
+      const name = p.displayName || state.user?.displayName || "User";
+      const email = p.email || state.user?.email || "";
+      const photo = p.photoURL || state.user?.photoURL || "";
+      const used = Math.min(Number(p.freeTweetsUsed || 0), 100);
+      const plan = p.planLabel || p.plan || "Free";
+      const expiry = p.subscriptionExpiry;
+      const active = p.subscriptionStatus === "active";
+
+      $("accountName").textContent = name;
+      $("accountEmail").textContent = email;
+      $("accountFree").textContent = `${used} / 100`;
+      $("accountUsageBar").style.width = `${used}%`;
+      $("accountPlan").textContent = plan;
+
+      const initial = (name.charAt(0) || "U").toUpperCase();
+      if (photo) {
+        const img = `<img src="${escapeHtml(photo)}" class="w-full h-full object-cover" alt="" referrerpolicy="no-referrer">`;
+        $("avatarBtn").innerHTML = img;
+        $("accountAvatar").innerHTML = img;
+      } else {
+        $("avatarBtn").textContent = initial;
+        $("accountAvatar").textContent = initial;
+      }
+
+      if (active && expiry) {
+        $("subscriptionInfo").innerHTML = `
+          <div class="flex items-center gap-2 text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check"></i> Active subscription</div>
+          <div class="text-slate-400 mt-1">Expires: ${escapeHtml(new Date(expiry).toLocaleString())}</div>`;
+      } else if (p.subscriptionStatus === "pending") {
+        $("subscriptionInfo").innerHTML = `
+          <div class="flex items-center gap-2 text-amber-400 font-semibold"><i class="fa-solid fa-clock"></i> Payment under review</div>
+          <div class="text-slate-500 mt-1">Your transaction is waiting for admin verification.</div>`;
+      } else {
+        $("subscriptionInfo").innerHTML = `
+          <div class="text-slate-300 font-semibold">Free plan</div>
+          <div class="text-slate-500 mt-1">100 free tweet submissions per account.</div>`;
+      }
+
+      const badge = $("usageBadge");
+      badge.textContent = active ? `${plan} active` : `${Math.max(0, 100 - used)} free left`;
+      badge.classList.toggle("text-amber-300", !active && used >= 90);
+    }
+
+    async function loadPaymentConfig() {
+      try {
+        const res = await fetch("/api/config");
+        const data = await res.json();
+        state.paymentConfig = data;
+        state.plans = data.plans || {};
+        $("paymentNetwork").textContent = data.network || "Not configured";
+        $("paymentWallet").value = data.wallet || "";
+
+        const entries = Object.entries(state.plans);
+        $("planGrid").innerHTML = entries.map(([key, plan], i) => `
+          <button class="planBtn text-left rounded-xl border ${i === 0 ? "border-sky-400 bg-sky-500/10" : "border-slate-800 bg-slate-900/60"} p-3 hover:border-sky-400/50 transition active:scale-[0.97]" data-plan="${escapeHtml(key)}">
+            <div class="text-xs font-semibold text-white">${escapeHtml(plan.label || key)}</div>
+            <div class="text-sm font-bold text-sky-400 mt-1">${escapeHtml(String(plan.amount ?? ""))}</div>
+          </button>`).join("");
+
+        document.querySelectorAll(".planBtn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            document.querySelectorAll(".planBtn").forEach(x => x.classList.remove("border-sky-400", "bg-sky-500/10"));
+            btn.classList.add("border-sky-400", "bg-sky-500/10");
+            state.selectedPlan = btn.dataset.plan;
+          });
+        });
+        state.selectedPlan = entries[0]?.[0] || null;
+      } catch (e) {
+        console.error("Payment config:", e);
+      }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Generation                                                          */
+    /* ------------------------------------------------------------------ */
+    function setGenerating(on) {
+      state.isGenerating = on;
+      $("sendBtn").disabled = on || !sanitizeTweetInput($("chatInput").value);
+      $("sendIcon").className = on ? "fa-solid fa-circle-notch spin text-sm" : "fa-solid fa-arrow-up text-sm";
+    }
+
+    async function runGeneration(chat, tweet, targetIndex) {
+      setGenerating(true);
+      try {
+        const data = await apiFetch("/api/generate", {
+          method: "POST",
+          body: JSON.stringify({
+            tweet,
+            minWords: state.settings.minWords,
+            maxWords: state.settings.maxWords,
+            replyCount: state.settings.replyCount,
+            tone: state.settings.tone,
+            tag: state.settings.tag,
+            language: state.settings.language
+          })
+        });
+
+        chat.messages[targetIndex] = {
+          role: "assistant",
+          content: parseReplies(data.text || ""),
+          source: tweet,
+          loading: false
+        };
+        saveLocalState();
+        renderMessages();
+        refreshAccount();
+      } catch (e) {
+        chat.messages[targetIndex] = {
+          role: "assistant",
+          content: [e.message || "Something went wrong."],
+          source: tweet,
+          error: true,
+          loading: false
+        };
+        saveLocalState();
+        renderMessages();
+        showToast(e.message || "Generation failed", "error");
+      } finally {
+        setGenerating(false);
+      }
+    }
+
+    async function sendMessage() {
+      if (state.isGenerating) return;
+
+      const input = $("chatInput");
+      const cleanTweet = sanitizeTweetInput(input.value);
+
+      if (!state.user) { openModal("loginModal"); return; }
+      if (!cleanTweet) { showToast("Paste the tweet text first", "error"); return; }
+
+      const chat = currentChat();
+      if (!chat) return;
+
+      input.value = "";
+      input.style.height = "auto";
+      updateCounters("");
+
+      chat.messages.push({ role: "user", content: cleanTweet });
+      chat.messages.push({ role: "assistant", content: [], source: cleanTweet, loading: true });
+      if (chat.messages.length === 2) {
+        chat.title = cleanTweet.slice(0, 40) + (cleanTweet.length > 40 ? "..." : "");
+        chat.createdAt = chat.createdAt || Date.now();
+      }
+      saveLocalState();
+      renderChatList();
+      renderMessages();
+
+      await runGeneration(chat, cleanTweet, chat.messages.length - 1);
+    }
+
+    async function regenerate(index) {
+      if (state.isGenerating) return;
+      const chat = currentChat();
+      const msg = chat?.messages[index];
+      if (!msg) return;
+
+      const tweet = msg.source ||
+        [...chat.messages.slice(0, index)].reverse().find(m => m.role === "user")?.content;
+      if (!tweet) return showToast("Original tweet not found", "error");
+      if (!state.user) { openModal("loginModal"); return; }
+
+      chat.messages[index] = { role: "assistant", content: [], source: tweet, loading: true };
+      renderMessages();
+      await runGeneration(chat, tweet, index);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Payment                                                             */
+    /* ------------------------------------------------------------------ */
+    async function submitPayment() {
+      if (!state.user) { openModal("loginModal"); return; }
+      const hash = $("txHashInput").value.trim();
+      if (!state.selectedPlan) return showToast("Select a plan", "error");
+      if (!hash) return showToast("Enter the transaction hash", "error");
+
+      const btn = $("submitPaymentBtn");
+      btn.disabled = true;
+      btn.textContent = "Submitting...";
+      $("paymentMessage").classList.add("hidden");
+
+      try {
+        await apiFetch("/api/subscribe", {
+          method: "POST",
+          body: JSON.stringify({ plan: state.selectedPlan, transactionHash: hash })
+        });
+        $("paymentMessage").textContent = "Payment submitted. An admin will verify the transaction.";
+        $("paymentMessage").className = "text-xs mt-3 text-emerald-400";
+        $("txHashInput").value = "";
+        await refreshAccount();
+      } catch (e) {
+        $("paymentMessage").textContent = e.message;
+        $("paymentMessage").className = "text-xs mt-3 text-rose-400";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Submit Payment for Review";
+      }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Events                                                              */
+    /* ------------------------------------------------------------------ */
+    $("loginBtn").addEventListener("click", () => openModal("loginModal"));
+    $("googleLoginBtn").addEventListener("click", loginGoogle);
+    $("mobileLogoutBtn").addEventListener("click", logout);
+    $("avatarBtn").addEventListener("click", () => openModal("accountModal"));
+    $("usageBadge").addEventListener("click", () => openModal("accountModal"));
+
+    $("toggleSidebar").addEventListener("click", openSidebar);
+    $("closeSidebarBtn").addEventListener("click", closeSidebar);
+    $("sidebarOverlay").addEventListener("click", closeSidebar);
+
+    $("newChatBtn").addEventListener("click", () => createNewChat());
+    $("sendBtn").addEventListener("click", sendMessage);
+
+    $("installAppBtn").addEventListener("click", handleInstallClick);
+    $("headerInstallBtn").addEventListener("click", handleInstallClick);
+    $("directInstallBtn").addEventListener("click", handleInstallClick);
+
+    $("chatSearch").addEventListener("input", e => {
+      state.searchQuery = e.target.value;
+      renderChatList();
+    });
+
+    $("chatInput").addEventListener("input", e => {
+      e.target.style.height = "auto";
+      e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
+      updateCounters(e.target.value);
+    });
+
+    $("chatInput").addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+
+    $("clearInputBtn").addEventListener("click", () => {
+      const input = $("chatInput");
+      input.value = "";
+      input.style.height = "auto";
+      updateCounters("");
+      input.focus();
+    });
+
+    $("pasteBtn").addEventListener("click", async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        const input = $("chatInput");
+        input.value = sanitizeTweetInput(text);
+        input.dispatchEvent(new Event("input"));
+        input.focus();
+      } catch {
+        showToast("Clipboard blocked — paste manually", "error");
+        $("chatInput").focus();
+      }
+    });
+
+    $("configBtn").addEventListener("click", () => openModal("configModal"));
+    $("rulesPill").addEventListener("click", () => openModal("configModal"));
+
+    $("replyCountInput").addEventListener("input", e => {
+      $("replyCountValue").textContent = e.target.value;
+    });
+
+    function validateWords() {
+      const min = parseInt($("minWordsInput").value) || 10;
+      const max = parseInt($("maxWordsInput").value) || 18;
+      const bad = max < min;
+      $("wordsHint").classList.toggle("hidden", !bad);
+      return !bad;
+    }
+    $("minWordsInput").addEventListener("input", validateWords);
+    $("maxWordsInput").addEventListener("input", validateWords);
+
+    $("saveConfigBtn").addEventListener("click", () => {
+      if (!validateWords()) return showToast("Check the word range", "error");
+      state.settings.replyCount = Math.max(1, Math.min(10, parseInt($("replyCountInput").value) || 5));
+      state.settings.minWords = Math.max(5, Math.min(30, parseInt($("minWordsInput").value) || 10));
+      state.settings.maxWords = Math.max(state.settings.minWords, Math.min(60, parseInt($("maxWordsInput").value) || 18));
+      state.settings.tone = $("toneSelector").value;
+      state.settings.tag = $("projectTag").value.trim();
+      state.settings.language = $("languageSelect").value;
+      saveLocalState();
+      syncSettingsUI();
+      closeModal("configModal");
+      showToast("Settings applied", "success");
+    });
+
+    $("resetConfigBtn").addEventListener("click", () => {
+      state.settings = { ...DEFAULT_SETTINGS };
+      saveLocalState();
+      syncSettingsUI();
+      validateWords();
+      showToast("Rules reset to defaults");
+    });
+
+    $("subscribeFromAccount").addEventListener("click", () => {
+      closeModal("accountModal");
+      openModal("subscriptionModal");
+    });
+    $("submitPaymentBtn").addEventListener("click", submitPayment);
+
+    $("copyWalletBtn").addEventListener("click", async () => {
+      const wallet = $("paymentWallet").value;
+      if (!wallet) return;
+      const ok = await copyText(wallet);
+      showToast(ok ? "Wallet copied" : "Copy failed", ok ? "success" : "error");
+    });
+
+    $("confirmOk").addEventListener("click", () => settleConfirm(true));
+    $("confirmCancel").addEventListener("click", () => settleConfirm(false));
+
+    document.querySelectorAll(".modalClose").forEach(btn => {
+      btn.addEventListener("click", () => closeModal(btn.dataset.modal));
+    });
+
+    document.querySelectorAll("[id$='Modal']").forEach(modal => {
+      modal.addEventListener("click", e => {
+        if (e.target !== modal) return;
+        if (modal.id === "confirmModal") settleConfirm(false);
+        else closeModal(modal.id);
+      });
+    });
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape") {
+        if (closeTopModal()) return;
+        closeSidebar();
+      }
+      // Ctrl/Cmd + K focuses the composer
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        $("chatInput").focus();
+      }
+    });
+
+    // Show a jump-to-latest button when scrolled away from the bottom
+    $("chatContainer").addEventListener("scroll", () => {
+      const c = $("chatContainer");
+      const away = c.scrollHeight - c.scrollTop - c.clientHeight > 220;
+      $("scrollBottomBtn").classList.toggle("hidden", !away);
+      $("scrollBottomBtn").classList.toggle("flex", away);
+    });
+    $("scrollBottomBtn").addEventListener("click", scrollToBottom);
+
+    // Swipe right from the left edge opens the sidebar on mobile
+    let touchStartX = 0, touchStartY = 0;
+    document.addEventListener("touchstart", e => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    document.addEventListener("touchend", e => {
+      if (window.innerWidth >= 768) return;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+      if (dy > 60) return;
+      if (touchStartX < 30 && dx > 70) openSidebar();
+      else if (dx < -70 && !$("sidebar").classList.contains("-translate-x-full")) closeSidebar();
+    }, { passive: true });
+
+    /* ------------------------------------------------------------------ */
+    /* Init                                                                */
+    /* ------------------------------------------------------------------ */
+    loadLocalState();
+    loadPaymentConfig();
+    updateCounters("");
+    setInstallAvailable(!!window.__deferredPrompt);
+    if (window.__deferredPrompt) setInstallAvailable(true);
+    if (isStandalone()) hideInstallButtons();
+  </script>
+
+<script type="module" src="/usage.js"></script>
+
+</body>
+</html>
