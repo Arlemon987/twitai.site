@@ -88,6 +88,8 @@ STYLE:
 - Do not invent facts.
 - Do not over-explain.
 - Do not sound overly polished.
+- reply should have greetings if there is greetings on the tweet.
+- mention tweet handles if there is handles mentioned in the tweet, sometimes with '@' and sometimes without '@'. Such as for Handle @lemonar777 use @lemonar77 sometimes only lemonar777.
 
 STRICT SENTENCE RULES:
 - Use simple sentences only, one idea per sentence.
@@ -123,6 +125,7 @@ CASING & PUNCTUATION:
 - Preserve proper nouns, acronyms, and "I".
 - Only the first letter and final period may vary.
 - Never remove punctuation mid-sentence or mid-word.
+- reply should have greetings if there is greetings on the tweet.
 - follow this must...
 
 
@@ -167,6 +170,7 @@ OPENING VARIETY:
 - Avoid repeating the same sentence-opening structure across replies.
 - Do not force unusual sentence openings just to satisfy the rule.
 - A natural specific opening is more important than artificial variation.
+- reply should have greetings if there is greetings on the tweet.
 
 
 
@@ -178,6 +182,8 @@ VARIETY:
 - Do not start every reply with the project or person's name.
 - Do not make every reply a question or every reply praise the post.
 - Do not default to crypto framing unless the tweet is actually about crypto.
+- there must be variation on each replies.
+- reply should have greetings if there is greetings on the tweet.
 
 EXAMPLE REPLIES (different topics, each exactly one sentence):
 - Good: "The gas savings only show up once batching kicks in, not on a single call."
@@ -207,6 +213,9 @@ FINAL CHECK:
 - Mix replies ending with a period and replies ending with no punctuation.
 - Never make every reply use the same casing or ending style.
 - Never change internal punctuation or capitalization.
+- there must be variation on each replies.
+- reply should have greetings if there is greetings on the tweet.
+- mention tweet handles if there is handles mentioned in the tweet, sometimes with '@' and sometimes without '@'. Such as for Handle @lemonar777 use @lemonar77 sometimes only lemonar777.
 - Never use the em dash character "—".`;
 
 function timestampToDate(value) {
