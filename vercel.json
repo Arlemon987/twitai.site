@@ -5,3 +5,13 @@
     }
   }
 }
+
+
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "https://backup.twitai.app/$1"
+    }
+  ]
+}
