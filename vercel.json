@@ -1,13 +1,10 @@
+
 {
   "functions": {
     "api/*.js": {
       "maxDuration": 60
     }
-  }
-}
-
-
-{
+  },
   "rewrites": [
     {
       "source": "/(.*)",
